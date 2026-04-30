@@ -1,0 +1,542 @@
+# ============================================================
+# はあとふる 2026年3月度 シフト設定
+# 特定施設入居者生活介護事業所
+# ============================================================
+
+facility:
+  name: "はあとふる"
+  type: "特定施設入居者生活介護事業所"
+
+month:
+  year: 2026
+  month: 3
+  days: 31
+  public_holidays: 9       # 公休日数（施設ごと・月ごとに変更可）
+  working_days: 22          # 所定勤務日数
+
+# シフトパターン定義
+shifts:
+  A:
+    name: "A"
+    start: "07:30"
+    end: "15:30"
+    category: "care"       # care=介護系, admin=管理系, cook=調理系
+  B:
+    name: "B"
+    start: "09:30"
+    end: "17:30"
+    category: "care"
+  C:
+    name: "C"
+    start: "12:30"
+    end: "20:30"
+    category: "care"
+  D:
+    name: "D"
+    start: "08:30"
+    end: "16:30"
+    category: "care"
+  E:
+    name: "E"
+    start: "08:30"
+    end: "16:30"
+    category: "admin"
+  night:
+    name: "夜勤"
+    start: "17:00"
+    end: "01:00+1"
+    category: "care"
+  dawn:
+    name: "明け"
+    start: "01:00"
+    end: "09:00"
+    category: "care"
+  cook1:
+    name: "調理1（早番）"
+    start: "06:30"
+    end: "08:30"
+    category: "cook"
+  cook2:
+    name: "調理2（遅番）"
+    start: "09:30"
+    end: "17:30"
+    category: "cook"
+
+# 日別の特殊扱い
+day_off_labels:
+  - "休"     # 会社指定休
+  - "希"     # 希望休
+  - "有"     # 有給休暇
+  - "研"     # 研修（出勤扱い）
+  - "健"     # 健診（出勤扱い）
+
+work_counted_labels: ["研", "健"]  # 出勤日数に算入するラベル
+
+# ============================================================
+# 配置ルール
+# ============================================================
+
+placement_rules:
+  # 配置ルール（各シフト正確に1名、2名以上配置しない）
+  daily_required:
+    care_shifts: ["A", "B", "C", "D", "night", "dawn"]
+    each_count: 1
+    each_max: 1      # 各シフト2名以上配置しない
+    sunday_exception:
+      shift: "A"
+      allow_zero: true   # 日曜はAなし許容（最悪の場合のみ）
+
+  # 24時間配置義務
+  continuous_coverage: true
+
+  # 介護職員だけで24時間配置が必須
+  # 介護職員のみで①夜,明,B,C ②夜,明,C,D のいずれかを各1名ずつセット
+  care_only_coverage:
+    best: ["night", "dawn", "B", "C"]     # 最優先パターン
+    best_alt: ["night", "dawn", "C", "D"] # 同等パターン
+    good: ["night", "dawn", "A", "C"]     # 次点（Aが30分早出or明け残業）
+    worst: ["night", "dawn", "A"]          # 最悪（30分残業）
+    worst_alt: ["night", "dawn", "D"]     # 最悪（Dが30分残業）
+
+  # 介護職員＋生活相談員＋機能訓練指導員でA,B,C,D,夜,明を各1人ずつ
+  care_plus_related_coverage:
+    roles: ["介護職員", "生活相談員", "機能訓練指導員"]
+    shifts: ["A", "B", "C", "D", "night", "dawn"]
+    each_count: 1
+    each_max: 1
+
+  # 調理員配置（各シフト正確に1名、2名以上配置しない）
+  cook_daily:
+    cook1: 1
+    cook1_max: 1
+    cook2: 1
+    cook2_max: 1
+
+  # 兼任者の人員カウント
+  dual_role_counting:
+    - name: "渡邊 哲也"
+      night_dawn_role: "介護職員"    # 夜/明は介護職員カウント
+      E_role: "計画作成担当者"         # Eは専門職カウント
+    - name: "吉玉 薫"
+      night_dawn_role: "介護職員"
+      E_role: "管理者"
+
+  # 人員過剰時の調整ルール
+  overstaffing_adjustments:
+    - action: "remove_night_dawn"
+      target: "吉玉 薫"
+      description: "吉玉の夜明をなくしEのみにする"
+    - action: "reduce_days"
+      targets: ["甲斐 裕美子", "辰見 イツ子", "甲斐 静幸"]
+      priority_reduce: "甲斐 裕美子"
+      description: "パートの日数を削減（甲斐裕美子を優先的に）"
+
+# ============================================================
+# 勤務制約
+# ============================================================
+
+work_constraints:
+  # 3勤1休
+  work_rest_pattern:
+    max_consecutive_work: 3
+    prefer_consecutive_rest: true
+
+  # 連続勤務制限（月跨ぎ含む）
+  max_consecutive_days: 3
+
+  # 夜勤サイクル: 公休→夜→明→公休
+  night_cycle:
+    pattern: ["off", "night", "dawn", "off"]
+    exceptions: ["吉玉 薫"]  # 吉玉は除外
+
+# ============================================================
+# スタッフ情報
+# ============================================================
+
+staff:
+  # ---------- 管理者・計画作成・専門職 ----------
+  - id: 1
+    name: "吉玉 薫"
+    role: "管理者"
+    employment: "常勤"
+    allowed_shifts: ["E", "night", "dawn"]
+    disallowed_shifts: ["A", "B", "C", "D"]
+    night_per_week: [1, 2]    # 週1〜2回
+    public_holidays: 9
+    working_days: 22
+
+  - id: 10
+    name: "渡邊 哲也"
+    role: "計画作成担当者"
+    employment: "常勤"
+    allowed_shifts: ["E", "night", "dawn"]
+    night_per_week: [1, 1]    # 週1回厳守
+    public_holidays: 9
+    working_days: 22
+
+  - id: 11
+    name: "甲斐 充代"
+    role: "機能訓練指導員"
+    employment: "常勤"
+    allowed_shifts: ["A", "B", "D"]
+    disallowed_shifts: ["C", "night", "dawn"]
+    weekend_rules:
+      A: 1   # 土日にAを各1回
+      BD: 1  # 土日にBまたはDを各1回
+    public_holidays: 9
+    working_days: 22
+
+  - id: 12
+    name: "田上 元美"
+    role: "生活相談員"
+    employment: "常勤"
+    allowed_shifts: ["A", "B", "D"]
+    disallowed_shifts: ["C", "night", "dawn"]
+    weekend_rules:
+      A: 1
+      BD: 1
+    public_holidays: 9
+    working_days: 22
+
+  - id: 13
+    name: "甲斐 千代美"
+    role: "看護職員"
+    employment: "常勤"
+    allowed_shifts: ["E"]
+    weekend_off: true   # 土日休み
+    weekday_fixed: "E"  # 土日以外はE固定で出勤
+    public_holidays: 9
+    working_days: 22    # 土日9日+公休0日 → 平日22日出勤
+
+  - id: 14
+    name: "椎葉 玲子"
+    role: "事務職員"
+    employment: "非常勤"
+    allowed_shifts: ["E"]
+    weekend_off: true
+    public_holidays: 16   # 31-15=16
+    working_days: 15
+
+  # ---------- 介護職員 ----------
+  - id: 2
+    name: "飯星 まゆみ"
+    role: "介護職員"
+    employment: "常勤"
+    allowed_shifts: ["A", "B", "C", "D", "night", "dawn"]
+    main_shifts: ["B", "D", "night", "dawn"]
+    A_per_month: 2
+    C_priority: "last_backup"     # Cは最終バックアップ
+    night_per_week: [1, 2]
+    public_holidays: 9
+    working_days: 22
+
+  - id: 3
+    name: "興梠 道子"
+    role: "介護職員"
+    employment: "常勤"
+    allowed_shifts: ["A", "B", "C", "D", "night", "dawn"]
+    main_shifts: ["B", "D", "night", "dawn"]
+    A_per_month: 2
+    C_priority: "last_backup"
+    night_per_week: [1, 1]
+    public_holidays: 9
+    working_days: 18
+    working_days_max: 22  # 希望休が多い月は18日程度
+
+  - id: 4
+    name: "小椋 富美"
+    role: "介護職員"
+    employment: "常勤"
+    allowed_shifts: ["B", "D", "night", "dawn"]
+    disallowed_shifts: ["A", "C"]
+    main_shifts: ["B", "D", "night", "dawn"]
+    cook2_designated_only: true    # 調理2は指定日のみ
+    night_per_week: [1, 1]
+    public_holidays: 9
+    working_days: 22
+
+  - id: 5
+    name: "佐藤 いそみ"
+    role: "介護職員"
+    employment: "非常勤"
+    allowed_shifts: ["night", "dawn"]
+    main_shifts: ["night", "dawn"]
+    night_per_week: [2, 2]
+    public_holidays: 17   # 31-14=17 (所定14〜15日)
+    working_days: 14
+    working_days_max: 15
+
+  - id: 6
+    name: "芹口 菅子"
+    role: "介護職員"
+    employment: "非常勤"
+    allowed_shifts: ["A", "D"]
+    main_shifts: ["A"]
+    D_ratio: 0.5    # DはAの半分
+    public_holidays: 19   # 31-12=19 (所定12〜15日)
+    working_days: 12
+    working_days_max: 15
+    conflict_rules:
+      - when: "甲斐 充代"
+        has_shift: "B"
+        then_disallow: "D"    # 甲斐充がBの時D不可
+
+  - id: 7
+    name: "甲斐 裕美子"
+    role: "介護職員"
+    employment: "非常勤"
+    allowed_shifts: ["C", "A", "cook2"]
+    main_shifts: ["C"]
+    disallowed_shifts: ["B", "D"]
+    public_holidays: 19    # 所定12日以下
+    working_days: 12
+    working_days_max: 12
+
+  - id: 8
+    name: "辰見 イツ子"
+    role: "介護職員"
+    employment: "非常勤"
+    allowed_shifts: ["C", "A"]
+    main_shifts: ["C"]
+    public_holidays: 19
+    working_days: 12
+    working_days_max: 15
+
+  - id: 9
+    name: "甲斐 静幸"
+    role: "介護職員"
+    employment: "非常勤"
+    allowed_shifts: ["C"]
+    main_shifts: ["C"]
+    public_holidays: 19
+    working_days: 12
+    working_days_max: 15
+
+  # ---------- 調理職員 ----------
+  - id: 15
+    name: "堀 カズ子"
+    role: "調理職員"
+    employment: "非常勤"
+    allowed_shifts: ["cook1"]
+    fixed_off_weekday: "金"    # 金曜のみ休日
+    all_other_days_work: true  # 金曜以外は希望休を除き全出勤
+
+  - id: 16
+    name: "町 倫子"
+    role: "調理職員"
+    employment: "非常勤"
+    allowed_shifts: ["cook1", "cook2"]
+    weekday_shifts:
+      水: "cook2"
+      木: "cook2"
+      金: "cook1"
+    fixed_weekdays: ["水", "木", "金"]  # 水木金のみ出勤
+
+  - id: 17
+    name: "甲斐 幸子"
+    role: "調理職員"
+    employment: "非常勤"
+    allowed_shifts: ["cook2"]
+    fixed_weekdays: ["月", "火", "金"]
+
+  - id: 18
+    name: "甲斐 嘉子"
+    role: "調理職員"
+    employment: "非常勤"
+    allowed_shifts: ["cook2"]
+    fixed_weekdays: ["日"]
+
+  - id: 19
+    name: "高本 みち子"
+    role: "調理職員"
+    employment: "非常勤"
+    allowed_shifts: ["cook2"]
+    fixed_weekdays: ["土"]
+
+  - id: 20
+    name: "花田 美幸"
+    role: "調理職員"
+    employment: "非常勤"
+    allowed_shifts: ["cook2"]
+
+# ============================================================
+# 2026年3月 個別入力データ
+# ============================================================
+
+# 前月末（2/26〜2/28）の出勤状況
+previous_month_tail:
+  "2026-02-26":
+    1: "night"
+    2: "off"
+    3: "dawn"
+    4: "D"
+    5: "off"
+    6: "A"
+    7: "off"
+    8: "off"
+    9: "C"
+    10: "E"
+    11: "有"
+    12: "B"
+    13: "E"
+    14: "E"
+    15: "cook1"
+    16: "cook2"
+    17: "off"
+    18: "off"
+    19: "off"
+    20: "off"
+  "2026-02-27":
+    1: "dawn"
+    2: "off"
+    3: "off"
+    4: "B"
+    5: "night"
+    6: "D"
+    7: "off"
+    8: "A"
+    9: "C"
+    10: "off"
+    11: "有"
+    12: "off"
+    13: "E"
+    14: "有"
+    15: "off"
+    16: "cook1"
+    17: "cook2"
+    18: "off"
+    19: "off"
+    20: "off"
+  "2026-02-28":
+    1: "off"
+    2: "off"
+    3: "D"
+    4: "off"
+    5: "dawn"
+    6: "off"
+    7: "cook2"
+    8: "C"
+    9: "off"
+    10: "night"
+    11: "A"
+    12: "B"
+    13: "off"
+    14: "off"
+    15: "cook1"
+    16: "off"
+    17: "off"
+    18: "off"
+    19: "有"
+    20: "off"
+
+# 3月の希望休・有給・固定指定
+march_requests:
+  2:   # 飯星
+    - { day: 10, type: "有" }
+    - { day: 11, type: "希" }
+    - { day: 26, type: "有" }
+  3:   # 興梠
+    - { day: 5, type: "希" }
+    - { day: 6, type: "希" }
+    - { day: 8, type: "希" }
+    - { day: 11, type: "希" }
+    - { day: 13, type: "希" }
+    - { day: 22, type: "希" }
+    - { day: 26, type: "希" }
+  4:   # 小椋
+    - { day: 1, type: "night" }   # 固定夜勤
+    - { day: 2, type: "dawn" }
+    - { day: 8, type: "night" }
+    - { day: 9, type: "dawn" }
+    - { day: 14, type: "研" }
+    - { day: 16, type: "night" }
+    - { day: 17, type: "dawn" }
+    - { day: 20, type: "希" }
+    - { day: 22, type: "night" }
+    - { day: 23, type: "dawn" }
+    - { day: 28, type: "希" }
+    - { day: 30, type: "night" }
+    - { day: 31, type: "dawn" }
+  5:   # 佐藤
+    - { day: 3, type: "希" }
+    - { day: 4, type: "希" }
+    - { day: 5, type: "希" }
+    - { day: 10, type: "希" }
+    - { day: 11, type: "希" }
+    - { day: 12, type: "希" }
+    - { day: 17, type: "希" }
+    - { day: 18, type: "希" }
+    - { day: 19, type: "希" }
+    - { day: 24, type: "希" }
+    - { day: 25, type: "希" }
+    - { day: 26, type: "希" }
+    - { day: 31, type: "希" }
+    # 不足時のみ 3,10,17,24,31 は明け可（前日夜勤）
+    - { day: 3, type: "dawn_if_needed" }
+    - { day: 10, type: "dawn_if_needed" }
+    - { day: 17, type: "dawn_if_needed" }
+    - { day: 24, type: "dawn_if_needed" }
+    - { day: 31, type: "dawn_if_needed" }
+  6:   # 芹口
+    - { day: 6, type: "希" }
+    - { day: 14, type: "希" }
+    - { day: 15, type: "希" }
+    - { day: 26, type: "希" }
+    - { day: 27, type: "希" }
+  7:   # 甲斐裕美子
+    - { day: 1, type: "希" }
+    - { day: 14, type: "希" }
+    - { day: 28, type: "希" }
+    - { day: 29, type: "希" }
+    - { day: 22, type: "cook2" }   # 調理2固定
+  8:   # 辰見
+    - { day: 3, type: "C" }     # 固定C枠
+    - { day: 10, type: "C" }
+    - { day: 18, type: "C" }
+    - { day: 24, type: "C" }
+    - { day: 31, type: "C" }
+    - { day: 26, type: "希" }
+  9:   # 甲斐静幸
+    - { day: 1, type: "C" }     # 固定C枠
+    - { day: 8, type: "C" }
+    - { day: 15, type: "C" }
+    - { day: 29, type: "C" }
+    - { day: 10, type: "希" }
+    - { day: 11, type: "希" }
+    - { day: 19, type: "希" }
+    - { day: 20, type: "希" }
+    - { day: 22, type: "希" }
+  10:  # 渡邊
+    - { day: 1, type: "dawn" }
+    - { day: 2, type: "night" }
+    - { day: 3, type: "dawn" }
+    - { day: 4, type: "off" }
+    - { day: 6, type: "有" }
+    - { day: 7, type: "night" }
+    - { day: 8, type: "dawn" }
+    - { day: 9, type: "off" }
+    - { day: 14, type: "研" }
+    - { day: 16, type: "希" }
+    - { day: 21, type: "night" }
+    - { day: 22, type: "dawn" }
+    - { day: 23, type: "off" }
+    - { day: 26, type: "希" }
+    - { day: 27, type: "有" }
+    - { day: 28, type: "night" }
+    - { day: 29, type: "dawn" }
+    - { day: 30, type: "off" }
+  11:  # 甲斐充
+    - { day: 17, type: "希" }
+    - { day: 18, type: "希" }
+  12:  # 田上
+    - { day: 7, type: "希" }
+    - { day: 8, type: "希" }
+    - { day: 21, type: "希" }
+  13:  # 甲斐千代美 - 全土日休み
+    - { day: 22, type: "有" }
+    - { day: 23, type: "有" }
+  14:  # 椎葉 - 全土日休み
+    - { day: 20, type: "off" }
+    - { day: 26, type: "希" }
+  17:  # 甲斐幸子
+    - { day: 22, type: "有" }
