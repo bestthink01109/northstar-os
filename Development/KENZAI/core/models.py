@@ -33,6 +33,9 @@ class DayRecord:
     time_off: float = 0.0                  # 時間有給（時間数: 1.0, 3.5, 4.0 等）
     time_off_raw: str = ''                 # 時間有給の生値（"半日"/"1" 等）
 
+    # 手動補正用
+    break_mins: Optional[float] = None     # 手動入力された休憩時間（分）
+
     # フラグ
     is_absent: bool = False                # 欠勤フラグ
     is_paid: bool = False                  # 有給（全休）フラグ

@@ -28,12 +28,12 @@ def create_junsei_config() -> CompanyConfig:
         company_name='純青',
 
         # ── インプット ──
-        input_type='ocr',                   # 手書き出勤簿（OCR）
-        input_dir=os.path.join(gdrive_base, '純青'),
+        input_type='image',
+        input_dir=os.path.join(gdrive_base, '🏢【KENZAI】給与計算', '📥 01_ここに入力データをポン（生データ用）', '純青'),
 
         # ── アウトプット ──
         output_format='kyuyo_rakuda',        # 給与らくだ
-        output_dir=os.path.join(gdrive_base, 'Development', '純青'),
+        output_dir=os.path.join(gdrive_base, '🏢【KENZAI】給与計算', '📤 02_ここから完成品を取る（出力用）', '純青'),
         output_encoding='cp932',
 
         # ── 勤務体系（平野工業と同一） ──

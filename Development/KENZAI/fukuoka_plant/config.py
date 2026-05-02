@@ -27,11 +27,11 @@ def create_fukuoka_plant_config() -> CompanyConfig:
 
         # ── インプット ──
         input_type='pdf',                   # スキャンPDF（日報）
-        input_dir=os.path.join(gdrive_base, '福岡プラント機工'),
+        input_dir=os.path.join(gdrive_base, '🏢【KENZAI】給与計算', '📥 01_ここに入力データをポン（生データ用）', '福岡プラント機工'),
 
         # ── アウトプット ──
-        output_format='generic_csv',         # 税理士使用ソフト用
-        output_dir=os.path.join(gdrive_base, 'Development', '福岡プラント機工'),
+        output_format='kyuyo_rakuda',         # 税理士使用ソフト用
+        output_dir=os.path.join(gdrive_base, '🏢【KENZAI】給与計算', '📤 02_ここから完成品を取る（出力用）', '福岡プラント機工'),
         output_encoding='cp932',
 
         # ── 勤務体系（平野工業と同一） ──

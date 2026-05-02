@@ -86,8 +86,11 @@ class OvertimeCalculator:
                 notes=f"時刻未記載(場所:{day_rec.place})"
             )
 
-        # 休憩時間の厳密計算
-        break_h = self._calculate_break_hours(t_s, t_e, employee_name, day_rec.is_saturday)
+        # 休憩時間の厳密計算（手動入力があれば優先）
+        if day_rec.break_mins is not None:
+            break_h = day_rec.break_mins / 60.0
+        else:
+            break_h = self._calculate_break_hours(t_s, t_e, employee_name, day_rec.is_saturday)
 
         # 実働時間
         actual_work = max(0.0, t_e - t_s - break_h)

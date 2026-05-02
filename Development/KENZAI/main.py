@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hirano.config import create_hirano_config
 from hirano.employee_master import EMPLOYEE_MASTER as HIRANO_MASTER
 from hirano.employee_master import get_employee_code as hirano_get_code
+from hirano.corrections import apply_corrections as hirano_apply_corrections
 from fukuoka_plant.config import create_fukuoka_plant_config
 from fukuoka_plant.employee_master import EMPLOYEE_MASTER as FUKUOKA_MASTER
 from fukuoka_plant.employee_master import get_employee_code as fukuoka_get_code
@@ -42,6 +43,7 @@ from exporters.generic_csv_exporter import GenericCSVExporter
 from exporters.attendance_sheet import AttendanceSheetExporter
 from exporters.diff_report import DiffReportExporter, build_diff_data
 from exporters.excel_clone_exporter import ExcelCloneExporter
+from parsers.fix_reader import read_fixes
 
 
 # ── 会社レジストリ ──
@@ -50,16 +52,19 @@ COMPANY_REGISTRY = {
         'create_config': create_hirano_config,
         'employee_master': HIRANO_MASTER,
         'get_employee_code': hirano_get_code,
+        'apply_corrections': hirano_apply_corrections,
     },
     'fukuoka_plant': {
         'create_config': create_fukuoka_plant_config,
         'employee_master': FUKUOKA_MASTER,
         'get_employee_code': fukuoka_get_code,
+        'apply_corrections': None,
     },
     'junsei': {
         'create_config': create_junsei_config,
         'employee_master': JUNSEI_MASTER,
         'get_employee_code': junsei_get_code,
+        'apply_corrections': None,
     },
 }
 
@@ -74,13 +79,15 @@ def find_excel_file(config, year, month):
     ]
     for pat in patterns:
         files = glob.glob(pat)
+        # 一時ファイル（~$で始まるもの）を除外
+        files = [f for f in files if not os.path.basename(f).startswith('~$')]
         if files:
             # 複数ヒットした場合は更新日時が最新のものを使用
             return max(files, key=os.path.getmtime)
     return None
 
 
-def process_company(company_id, year, month, excel_path=None, verbose=True):
+def process_company(company_id, year, month, excel_path=None, verbose=True, suffix=''):
     """
     1社分の給与計算処理を実行する。
 
@@ -89,6 +96,8 @@ def process_company(company_id, year, month, excel_path=None, verbose=True):
         year, month: 対象年月
         excel_path: Excelファイルパス（Noneの場合は自動検出）
         verbose: 詳細出力
+        suffix: 出力ファイル名に付加するサフィックス（例: '【修正分】'）
+        fix_path: 修正入力済み差異レポートのパス
     """
     reg = COMPANY_REGISTRY.get(company_id)
     if reg is None:
@@ -99,6 +108,7 @@ def process_company(company_id, year, month, excel_path=None, verbose=True):
     config = reg['create_config']()
     employee_master = reg['employee_master']
     get_code_fn = reg['get_employee_code']
+    apply_corrections_fn = reg.get('apply_corrections')  # 補正関数（会社ごとに異なる）
 
     print(f"{'='*60}")
     print(f"  {config.company_name} 給与計算 ({year}年{month}月)")
@@ -151,6 +161,32 @@ def process_company(company_id, year, month, excel_path=None, verbose=True):
         return False
     print(f"[解析] {len(all_sheets)}名分のデータを検出")
 
+    # ── 2b. 入力補正値の適用（corrections.py の CORRECTIONS に定義された値を day_rec に注入） ──
+    if apply_corrections_fn is not None:
+        apply_corrections_fn(all_sheets, year, month)
+
+    # ── 2c. 差異レポートからの手動補正値の適用 ──
+    if fix_path and os.path.exists(fix_path):
+        print(f"[手動補正] 差異レポートから修正値を読み込みます: {os.path.basename(fix_path)}")
+        try:
+            manual_corrections = read_fixes(fix_path)
+            for sheet_data in all_sheets:
+                name = sheet_data['sheet_name']
+                if name not in manual_corrections:
+                    continue
+                day_corrections = manual_corrections[name]
+                for day_rec in sheet_data['days']:
+                    d = day_rec['day']
+                    if d not in day_corrections:
+                        continue
+                    for field, new_val in day_corrections[d].items():
+                        old_val = day_rec.get(field)
+                        day_rec[field] = new_val
+                        print(f"  [手動補正適用] {name} Day{d} {field}: {old_val}→{new_val}")
+        except Exception as e:
+            print(f"[エラー] 修正値の読み込みに失敗しました: {e}")
+            return False
+
     # ── 3. 各社員をコアエンジンで計算 ──
     calculator = OvertimeCalculator(config)
     allocator = WeeklyAllocator(config)
@@ -160,6 +196,8 @@ def process_company(company_id, year, month, excel_path=None, verbose=True):
     csv_records = []
     attendance_data = []
     all_issues = []
+    all_diff_data = []
+    clone_data = []
 
     for sheet_data in all_sheets:
         sheet_name = sheet_data['sheet_name']
@@ -175,6 +213,11 @@ def process_company(company_id, year, month, excel_path=None, verbose=True):
         yr = sheet_data['year']
         mo = sheet_data['month']
 
+        # パーサーが年月を取得できなかった場合（openpyxl で保存後など数式が未評価の状態）
+        # CLI 引数の year・month をフォールバックとして使用する
+        if yr is None or mo is None:
+            yr = year
+            mo = month
         # (a) 日次計算
         calc_results = []
         for day_rec in days:
@@ -242,18 +285,20 @@ def process_company(company_id, year, month, excel_path=None, verbose=True):
     os.makedirs(config.output_dir, exist_ok=True)
     if config.input_type == 'excel' and all_diff_data:
         diff_exporter = DiffReportExporter()
-        diff_path = os.path.join(config.output_dir,
-                                 f"差異レポート_{config.company_name}_{yr}{mo:02d}.xlsx")
+        diff_stem = f"{suffix}差異レポート_{config.company_name}_{yr}{mo:02d}.xlsx"
+        diff_path = os.path.join(config.output_dir, diff_stem)
         diff_exporter.export(all_diff_data, diff_path, config.company_name, yr, mo)
 
     # ── 5. CSV出力 ──
     if config.output_format == 'kyuyo_rakuda':
         exporter = RakudaCSVExporter(encoding=config.output_encoding)
-        csv_path = os.path.join(config.output_dir, f"kintai6_{yr}{mo:02d}.csv")
+        csv_stem = f"{suffix}kintai6_{yr}{mo:02d}.csv"
+        csv_path = os.path.join(config.output_dir, csv_stem)
         exporter.export(csv_records, csv_path, yr, mo)
     elif config.output_format == 'generic_csv':
         exporter = GenericCSVExporter(encoding=config.output_encoding)
-        csv_path = os.path.join(config.output_dir, f"勤怠_{config.company_name}_{yr}{mo:02d}.csv")
+        csv_stem = f"{suffix}勤怠_{config.company_name}_{yr}{mo:02d}.csv"
+        csv_path = os.path.join(config.output_dir, csv_stem)
         exporter.export(csv_records, csv_path, yr, mo)
     else:
         print(f"[注意] 出力形式 '{config.output_format}' は未実装")
@@ -262,14 +307,19 @@ def process_company(company_id, year, month, excel_path=None, verbose=True):
     if config.input_type == 'excel' and input_path:
         # 入力Excelと同じフォーマットで出力（書式・レイアウト完全保持）
         clone_exporter = ExcelCloneExporter()
-        clone_path = os.path.join(config.output_dir,
-                                   f"【計算済】{os.path.basename(input_path)}")
+        base_name = os.path.basename(input_path)
+        # サフィックスは拡張子の前に挿入
+        name_stem, name_ext = os.path.splitext(base_name)
+        clone_stem = f"{suffix}【計算済】{name_stem}{name_ext}"
+        clone_path = os.path.join(config.output_dir, clone_stem)
         clone_exporter.export(input_path, clone_path, clone_data)
     else:
         # OCR/PDF入力の場合は独自フォーマットの出勤簿を生成
         sheet_exporter = AttendanceSheetExporter()
-        attendance_path = os.path.join(config.output_dir,
-                                       f"出勤簿_{config.company_name}_{yr}{mo:02d}.xlsx")
+        attendance_path = os.path.join(
+            config.output_dir,
+            f"{suffix}出勤簿_{config.company_name}_{yr}{mo:02d}.xlsx"
+        )
         sheet_exporter.export(attendance_data, attendance_path, config.company_name, yr, mo)
 
     print(f"\n[完了] {config.company_name} {yr}年{mo}月 処理完了")
@@ -349,6 +399,13 @@ def main():
     parser.add_argument('--file', '-f', help='入力ファイルパス（省略時は自動検出）')
     parser.add_argument('--all', '-a', action='store_true', help='全社一括処理')
     parser.add_argument('--quiet', '-q', action='store_true', help='簡潔な出力')
+    parser.add_argument(
+        '--suffix', '-s', default='',
+        help='出力ファイル名に付加するサフィックス（例: --suffix 【修正分】）'
+    )
+    parser.add_argument(
+        '--fix', help='差異レポートのパスを指定して手動修正を適用（出力ファイルに自動で【修正分】が付加されます）'
+    )
 
     args = parser.parse_args()
 
@@ -360,15 +417,25 @@ def main():
         print(f"[エラー] 年月の形式が不正です: {args.month} (YYYYMM形式で指定してください)")
         sys.exit(1)
 
+    suffix = args.suffix  # 例: '【修正分】'
+    if args.fix:
+        suffix = '【修正分】'
+        
+    if suffix:
+        print(f"[オプション] 出力ファイルにサフィックス追加: {suffix}")
+
     if args.all:
         success = True
         for cid in COMPANY_REGISTRY:
-            ok = process_company(cid, year, month, verbose=not args.quiet)
+            ok = process_company(cid, year, month, verbose=not args.quiet, suffix=suffix, fix_path=args.fix)
             if not ok:
                 success = False
         sys.exit(0 if success else 1)
     elif args.company:
-        ok = process_company(args.company, year, month, excel_path=args.file, verbose=not args.quiet)
+        ok = process_company(
+            args.company, year, month,
+            excel_path=args.file, verbose=not args.quiet, suffix=suffix, fix_path=args.fix
+        )
         sys.exit(0 if ok else 1)
     else:
         parser.print_help()

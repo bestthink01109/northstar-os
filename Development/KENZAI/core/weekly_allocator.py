@@ -67,102 +67,151 @@ class WeeklyAllocator:
             if not week_days:
                 continue
 
-            # ── 週内所定時間合計の計算 ──
-            sched_total = 0.0
-            unlabor = 0.0   # 日次の不就労（不足分）の合計
+            # ── 1. 週内不足枠（バケツ）の算出 ──
+            # 週の実労働時間が40時間（※週の日数×所定時間の合計）に不足する分をスライド枠とする
+            sched_total  = 0.0
+            actual_total = 0.0
+            week_time_off = 0.0  # 時間有給の週合計（不就労扱い）
 
             for d in week_days:
                 day_rec, calc = by_day[d]
                 weekday = day_rec.weekday if hasattr(day_rec, 'weekday') else day_rec['weekday']
-                is_absent = day_rec.is_absent if hasattr(day_rec, 'is_absent') else day_rec['is_absent']
-                is_paid = day_rec.is_paid if hasattr(day_rec, 'is_paid') else day_rec['is_paid']
-
+                
                 if weekday == '日':
                     continue
-                if d in self.config.new_year_holidays:
-                    continue
-                if is_absent or is_paid:
+                # new_year_holidays は1月のみ適用（正月休み）
+                if month == 1 and d in self.config.new_year_holidays:
                     continue
 
                 calc_scheduled = calc.scheduled if hasattr(calc, 'scheduled') else calc['scheduled']
-                calc_actual = calc.actual_work if hasattr(calc, 'actual_work') else calc['actual_work']
+                calc_actual    = calc.actual_work if hasattr(calc, 'actual_work') else calc['actual_work']
 
-                sched_total += calc_scheduled
-                unlabor += max(0.0, calc_scheduled - calc_actual)
+                # 時間有給（time_off）を収集：実労働ではないため不就労として算入する
+                time_off_v = 0.0
+                if hasattr(day_rec, 'time_off'):
+                    time_off_v = day_rec.time_off or 0.0
+                elif isinstance(day_rec, dict):
+                    time_off_v = day_rec.get('time_off') or 0.0
 
-            # 欠勤・有給日の所定時間を集計
-            absent_sched = 0.0
+                sched_total   += calc_scheduled
+                actual_total  += calc_actual
+                week_time_off += time_off_v
+
+            # 不足分を算出（週の所定時間 - 週の実働時間 + 時間有給の不就労分）
+            # ※ 時間有給は実労働ではないため shortage_budget を time_off 分だけ増やす
+            shortage_budget = max(0.0, sched_total - actual_total) + week_time_off
+
+            # ── 2. 各日の残業を抽出 ──
+            # 一旦、すべての残業（actual_work > scheduled）を仮の「法定外残業」とみなし、
+            # そこから優先順位に従ってバケツ（shortage_budget）を消費して「法定内残業」にスライドする。
+            
+            # 各日の残業情報を保持するリスト
+            overtime_days = []
             for d in week_days:
                 day_rec, calc = by_day[d]
                 weekday = day_rec.weekday if hasattr(day_rec, 'weekday') else day_rec['weekday']
-                is_absent = day_rec.is_absent if hasattr(day_rec, 'is_absent') else day_rec['is_absent']
-                is_paid = day_rec.is_paid if hasattr(day_rec, 'is_paid') else day_rec['is_paid']
+                is_saturday = day_rec.is_saturday if hasattr(day_rec, 'is_saturday') else day_rec['is_saturday']
+                t_end = day_rec.t_end if hasattr(day_rec, 't_end') else day_rec['t_end']
 
-                if (is_absent or is_paid) and weekday != '日' and d not in self.config.new_year_holidays:
-                    calc_scheduled = calc.scheduled if hasattr(calc, 'scheduled') else calc['scheduled']
-                    absent_sched += calc_scheduled
-
-            has_absent_or_paid = absent_sched > 0.0
-
-            # ── ケースA/B/C を確定 ──
-            if has_absent_or_paid:
-                if absent_sched <= 3.0 and unlabor <= 0.0:
-                    case = 'B'
-                else:
-                    case = 'C'
-            else:
-                if unlabor <= 0.0:
-                    case = 'A'
-                elif unlabor <= 3.0:
-                    case = 'B'
-                else:
-                    case = 'C'
-
-            # ── 各日の所内/法定外を確定 ──
-            for d in week_days:
-                day_rec, calc = by_day[d]
-
-                # dict形式とdataclass形式の両対応
                 notes = calc.notes if hasattr(calc, 'notes') else calc.get('notes', '')
-                if notes in ('欠勤', '有給', '日曜休'):
-                    continue
-
-                has_raw_ot = hasattr(calc, 'raw_ot') if not isinstance(calc, dict) else 'raw_ot' in calc
-                if not has_raw_ot:
+                # new_year_holidays は1月のみ適用（正月休み）
+                is_new_year = (month == 1 and d in self.config.new_year_holidays)
+                if notes in ('欠勤', '有給', '日曜休') or weekday == '日' or is_new_year:
                     continue
 
                 actual_work = calc.actual_work if hasattr(calc, 'actual_work') else calc['actual_work']
                 scheduled = calc.scheduled if hasattr(calc, 'scheduled') else calc['scheduled']
-                is_saturday = day_rec.is_saturday if hasattr(day_rec, 'is_saturday') else day_rec['is_saturday']
-                t_end = day_rec.t_end if hasattr(day_rec, 't_end') else day_rec['t_end']
+                
+                raw_ot = max(0.0, actual_work - scheduled)
 
-                new_ot_in = 0.0
-                new_ot_out = 0.0
+                # t_endの取得（土曜日の18:00制限用）
+                if hasattr(calc, 't_end'):
+                    t_e = calc.t_end
+                elif isinstance(calc, dict):
+                    t_e = calc.get('t_end')
+                else:
+                    t_e = None
+                    
+                overtime_days.append({
+                    'day': d,
+                    'is_saturday': weekday == '土',
+                    't_end': t_e,
+                    'raw_ot': raw_ot,
+                    'ot_in': 0.0,
+                    'ot_out': raw_ot, # 初期値は全て法定外
+                    'calc': calc
+                })
 
-                if case == 'A':
-                    # 皆勤週: 所定超過は全て法定外
+            # ── 3. バケツリレー（段階的スライド） ──
+            remaining_budget = shortage_budget
+
+            # 優先①: 土曜日の残業（最大3時間まで）
+            for ot_info in overtime_days:
+                if remaining_budget <= 0.0:
+                    break
+                if ot_info['is_saturday'] and ot_info['raw_ot'] > 0:
+                    # 土曜の所内最大枠は3.0時間（15:00終了で18:00まで残業した場合を想定）
+                    max_sat_in = 3.0
+                    
+                    # 実際の終了時間が考慮できる場合は、18:00までの範囲に制限する（既存ロジック準拠）
+                    # 平野工業の config: sat_scheduled_end = 15.0, sat_overtime_max = 18.0
+                    if ot_info['t_end'] is not None and ot_info['t_end'] > self.config.sat_scheduled_end:
+                        ot_in_end = min(ot_info['t_end'], self.config.sat_overtime_max)
+                        max_sat_in = max(0.0, ot_in_end - self.config.sat_scheduled_end)
+
+                    # スライド可能な量（残業時間、土曜枠、バケツの残りのうち最小のもの）
+                    slide_amount = min(ot_info['raw_ot'], max_sat_in, remaining_budget)
+                    slide_amount = _round_half(slide_amount)
+
+                    ot_info['ot_in'] = slide_amount
+                    ot_info['ot_out'] = _round_half(ot_info['raw_ot'] - slide_amount)
+                    remaining_budget -= slide_amount
+
+            # 優先②: 平日（月〜金）の残業（各日最大1時間まで）
+            # ── 残業時間の多い日を優先してot_inに振り分ける ──
+            # 同じ残業時間の場合は日番号の降順（後の日）を優先する
+            weekday_ots = sorted(
+                [ot for ot in overtime_days if not ot['is_saturday'] and ot['raw_ot'] > 0],
+                key=lambda x: (-x['raw_ot'], -x['day'])
+            )
+            for ot_info in weekday_ots:
+                if remaining_budget <= 0.0:
+                    break
+
+                # すでに ot_in にスライドされている分は除外（土曜以外は0のはずだが念のため）
+                remaining_raw_ot = max(0.0, ot_info['raw_ot'] - ot_info['ot_in'])
+                if remaining_raw_ot <= 0:
+                    continue
+                    
+                # 平日の所内最大枠は1.0時間（法定8.0h - 所定7.0h）
+                # 厳密には、min(actual_work, 8.0) - scheduled なので最大1.0h
+                # ここでは汎用的に legal_daily_limit - scheduled と計算
+                calc = ot_info['calc']
+                scheduled = calc.scheduled if hasattr(calc, 'scheduled') else calc['scheduled']
+                max_weekday_in = max(0.0, self.config.legal_daily_limit - scheduled)
+                
+                # スライド可能な量（残りの残業時間、平日1日枠、バケツの残りのうち最小のもの）
+                slide_amount = min(remaining_raw_ot, max_weekday_in, remaining_budget)
+                slide_amount = _round_half(slide_amount)
+
+                ot_info['ot_in'] += slide_amount
+                ot_info['ot_out'] = _round_half(ot_info['raw_ot'] - ot_info['ot_in'])
+                remaining_budget -= slide_amount
+
+            # ── 4. 更新処理 ──
+            # overtime_days を辞書化して簡単に検索できるようにする
+            ot_dict = {item['day']: item for item in overtime_days}
+
+            for d in week_days:
+                day_rec, calc = by_day[d]
+                
+                if d in ot_dict:
+                    ot_info = ot_dict[d]
+                    new_ot_in = ot_info['ot_in']
+                    new_ot_out = ot_info['ot_out']
+                else:
                     new_ot_in = 0.0
-                    new_ot_out = _round_half(max(0.0, actual_work - scheduled))
-
-                elif case == 'B':
-                    # 不就労3h以内: 土曜15:00〜18:00のみ所内、それ以外は法定外
-                    if is_saturday and t_end is not None and t_end > self.config.sat_scheduled_end:
-                        ot_in_end = min(t_end, self.config.sat_overtime_max)
-                        raw_ot_in = max(0.0, ot_in_end - self.config.sat_scheduled_end)
-                        new_ot_in = _round_half(min(raw_ot_in, unlabor))
-                        new_ot_out = _round_half(max(0.0, t_end - self.config.sat_overtime_max))
-                    else:
-                        new_ot_in = 0.0
-                        new_ot_out = _round_half(max(0.0, actual_work - scheduled))
-
-                else:  # case == 'C'
-                    # 不就労3h超: 各日の8h未満超過=所内、8h超=法定外
-                    if actual_work > scheduled:
-                        new_ot_in = _round_half(max(0.0, min(actual_work, self.config.legal_daily_limit) - scheduled))
-                        new_ot_out = _round_half(max(0.0, actual_work - self.config.legal_daily_limit))
-                    else:
-                        new_ot_in = 0.0
-                        new_ot_out = 0.0
+                    new_ot_out = 0.0
 
                 # 更新（dict形式とdataclass形式の両対応）
                 if isinstance(calc, dict):
@@ -174,12 +223,12 @@ class WeeklyAllocator:
                         work=calc.work,
                         ot_in=new_ot_in,
                         ot_out=new_ot_out,
-                        raw_ot=calc.raw_ot,
-                        absence=calc.absence,
-                        actual_work=calc.actual_work,
-                        scheduled=calc.scheduled,
+                        raw_ot=calc.raw_ot if hasattr(calc, 'raw_ot') else 0.0,
+                        absence=calc.absence if hasattr(calc, 'absence') else 0.0,
+                        actual_work=calc.actual_work if hasattr(calc, 'actual_work') else 0.0,
+                        scheduled=calc.scheduled if hasattr(calc, 'scheduled') else 0.0,
                         break_hours=calc.break_hours if hasattr(calc, 'break_hours') else 0.0,
-                        notes=calc.notes,
+                        notes=calc.notes if hasattr(calc, 'notes') else '',
                     )
                 updated[d] = (day_rec, new_calc)
 

@@ -26,11 +26,11 @@ def create_hirano_config() -> CompanyConfig:
 
         # ── インプット ──
         input_type='excel',
-        input_dir=os.path.join(gdrive_base, '平野工業'),
+        input_dir=os.path.join(gdrive_base, '🏢【KENZAI】給与計算', '📥 01_ここに入力データをポン（生データ用）', '平野工業'),
 
         # ── アウトプット ──
         output_format='kyuyo_rakuda',
-        output_dir=os.path.join(gdrive_base, 'Development', '平野工業'),
+        output_dir=os.path.join(gdrive_base, '🏢【KENZAI】給与計算', '📤 02_ここから完成品を取る（出力用）', '平野工業'),
         output_encoding='cp932',
 
         # ── 勤務体系（一般社員） ──
