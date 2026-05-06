@@ -56,7 +56,16 @@ Google Drive/
 
 注意: 全フォルダはサービスアカウント（northstar-n8n@fifth-sprite-492523-i8.iam.gserviceaccount.com）と共有済み。
 
-### 1-4. n8n登録済みCredential（確定・5つ）
+### 1-3-B. Googleカレンダー ID（確定）
+
+| カレンダー | ID | 用途 |
+|---------|-----|------|
+| メインカレンダー（赤瀬文成） | bestthink01109@gmail.com | 予定の読み取り・作成 |
+| BUN_CEOのタスク | a0c7e0a0c3b9038b4a54b546d6119480d08d047ac3676811ea6fd1b00da46dc2@group.calendar.google.com | タスク管理・[完了]への書き換え |
+
+注意: 両カレンダーともサービスアカウントに「予定の変更」権限で共有済み。
+
+### 1-4. n8n登録済みCredential（確定・6つ）
 
 | Credential名 | 提供元 | 用途 |
 |------------|-------|------|
@@ -65,13 +74,13 @@ Google Drive/
 | DeepSeek account | DeepSeek API | 帳票・文書生成・FINレポート |
 | OpenAI account | OpenAI API | QA（全パイプライン共通・GPT-4o mini） |
 | GitHub account | GitHub API | コンテキストファイル参照 |
+| Google Service Account account | Google Cloud | Google Drive・Calendar読み書き（サービスアカウント） |
 
 ### 1-5. 追加予定のCredential（未登録・次セッションで登録）
 
 | API | 用途 | 登録優先度 |
 |-----|------|---------|
 | LINE Messaging API | 全通知・承認・社長からの指示受信 | 最優先 |
-| Google Drive API（OAuth） | ファイル保存・読み込み | 最優先 |
 | Google Calendar API（OAuth） | 予定・タスク取得・更新 | 高 |
 
 ### 1-6. LINE Messaging API設定状況（確定）
