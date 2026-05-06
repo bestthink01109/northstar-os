@@ -36,23 +36,25 @@ n8n（シンVPS・24/365稼働）で自律実行
 
 ```
 Google Drive/
-├── 📊 Reports/（各部門からCOOへの報告・成果物）
-│   ├── OPS/
-│   ├── RSC/
-│   ├── BizDev/
-│   ├── FIN/
-│   └── DEV/
+├── 📊 Reports/（フォルダID: 1uM990vQViDJ5BTer9_XGJZUZsJEKD3y_）
+│   ├── OPS/（フォルダID: 1ahvEniXrxUiPH50yc1A1g6E4qcFdLccv）
+│   ├── RSC/（フォルダID: 1I_68Pimq8jKjq6xfPMAeD22oeAHc8mTf）
+│   │   ├── FUKUOKA/（フォルダID: 1QxbuEYftnqZh4GnqdWAZ7PEWJGZor0GW）
+│   │   ├── KUMAMOTO/（フォルダID: 1q5SwCxPyGJNA_aJlsKUaU48rLcYgM1-k）
+│   │   ├── MHLW/（フォルダID: 14lmvkwbJ3o4-xHxZ32R5edsYBhyNyuUt）
+│   │   └── AI/（フォルダID: 131j6YvcknIA2KPfIXW_uR7xCsPS7Eqc8）
+│   ├── BizDev/（フォルダID: 1ItQqd-_I3ARoUkclvJc4pVU2HMMlq_dS）
+│   ├── FIN/（フォルダID: 1kXD9larver4TTgWAJAVeBLWujb2eaM70）
+│   └── DEV/（フォルダID: 1axzPX0xjgWxVLTHLQHZf-7kSLO2Q_9kZ）
+├── research/
+│   └── Daily_Report/（フォルダID: 1SGCPerV8CCHT6CcDI8-E6G2JbbmNmsp8）
 ├── 🏢【KENZAI】給与計算/
 │   ├── 📥 01_ここに入力データをポン/
 │   └── 📤 02_ここから完成品を取る/
-├── FUKUOKA/（フォルダID: 1MWO1fb0Pjt3NXZSaHRLFiHopaJMERhyR）
-├── KUMAMOTO/（フォルダID: 1sHN1qb1Qi4VaPgYtz4DIhbJ8VELYEDog）
-├── MHLW/（フォルダID: 1--XvZsAKB1R7jqhPC0bZvvtxbD-7XvhT）
-├── AI/（フォルダID: 1BHRG_VCHdt8LuoP9lZ44pR4cuZ4r78pE）
-└── Daily_Report/（フォルダID: 1jmRCQcEB6T8QrkmJdZt1iG0UaafUWL0g）
+└── 旧ファイル/（旧FUKUOKA・KUMAMOTO・MHLW・AI等を格納）
 ```
 
-注意: Reportsフォルダは次セッションで手動作成が必要。
+注意: 全フォルダはサービスアカウント（northstar-n8n@fifth-sprite-492523-i8.iam.gserviceaccount.com）と共有済み。
 
 ### 1-4. n8n登録済みCredential（確定・5つ）
 
