@@ -129,12 +129,16 @@ AIが以下の処理を自動実行する。
 
 1. HEIC/JPG/PDF形式を受け取る
 2. OCRエンジン3段フォールバックで文字認識
-   - 第一優先: Mac Vision Framework（無料・最速）
-   - 第二優先: Claude API（手書き解読最強）
-   - 第三優先: Gemini API（表構造解析に強い）
+   - 第一優先: Claude Sonnet 4.6（Anthropic account・手書き解読最強）
+   - 第二優先: Gemini 2.5 Flash（Google Gemini account・表構造解析に強い）
+   - 第三優先: Mac Vision Framework（VPS環境では使用不可のため、将来的にTesseract OCRに置換）
 3. 認識結果を構造化データに変換
-4. 元の紙フォーマットと照合してエラーチェック
+4. 元の紙フォーマットと照合してエラーチェック（QA: GPT-4o mini・OpenAI account）
 5. Supabaseに保存
+
+注意: VPS上で実行する場合、Mac Vision Frameworkは使用できない。
+代替としてTesseract OCR（無料・オープンソース）をフォールバック最終段に配置する。
+API名とCredentialはArchitecture_Plan_v3 §9-2を参照。
 
 **この方式の価値**
 施設が今使っている紙の記録用紙を変える必要がない。
@@ -247,10 +251,15 @@ ChatGPTカスタムGPTsまたはclaude.aiで以下を検証する。
 
 - フロントエンド: Vite（React）/ Tailwind CSS
 - ホスティング: Vercel（無料枠）
-- DB・認証: Supabase（無料枠）
-- 音声認識: Web Speech API（無料）→ 高精度化時にWhisper API
-- AI処理: Claude API / GPT-4o mini
+- DB・認証: Supabase（無料枠・東京リージョン）
+- 音声認識: Web Speech API（無料）→ 高精度化時にWhisper API（OpenAI account）
+- テキスト整形（ケース記録生成）: Claude Sonnet 4.6（Anthropic account）
+- OCR（紙媒体読取）: Claude Sonnet 4.6（Anthropic account）→ Gemini API（Google Gemini account）フォールバック
+- QA（出力品質検証）: GPT-4o mini（OpenAI account）
+- 帳票・文書テンプレート生成: DeepSeek V3.2（DeepSeek account）
 - デプロイ: Vercel（GitHub Push → 自動デプロイ）
+
+注意: 全APIはn8n登録済みのCredentialを使用する。Architecture_Plan_v3 §9-1を参照。
 
 ### Phase 3: 顧客テスト
 
