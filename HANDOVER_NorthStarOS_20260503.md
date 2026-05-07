@@ -118,20 +118,33 @@ Google Drive/
 
 ## 2. 未完了・次セッションでやること（優先順）
 
-### 最優先（Phase 1完了に必要）
+### 2026/05/07 完了済みタスク
+
+| # | タスク | 状態 |
+|---|------|------|
+| 1 | 設計書の最終版をGitHubにpush | ✅ 完了 |
+| 2 | Google DriveにReportsフォルダ作成・RSCサブフォルダ追加 | ✅ 完了 |
+| 3 | n8nにLINE Messaging API登録 | ✅ 完了 |
+| 4 | 社長のLINEにNorthStarボット友達登録 | ✅ 完了 |
+| 5 | 社長のLINEユーザーID取得（U803f81551a6913e836e9e55192139d26） | ✅ 完了 |
+| 6 | VPSスワップ領域確認（2GB設定済み） | ✅ 完了 |
+| 7 | Google Drive サービスアカウント連携（drive.js自律操作可能） | ✅ 完了 |
+| 8 | Google Calendar サービスアカウント連携（JWT自前生成方式） | ✅ 完了 |
+| 9 | 朝7:00ブリーフィングワークフロー構築・稼働開始 | ✅ 完了（2026/05/07） |
+
+### n8n技術メモ（重要）
+
+- `NODE_FUNCTION_ALLOW_BUILTIN=crypto` をdocker-compose.ymlに追加済み（JWT署名に必要）
+- n8n APIキー: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`（~/.config/gdrive-mcp/n8n-api.sh に保存）
+- 朝7:00ブリーフィングワークフローID: `NjmKR3rlzaAdznoB`
+- Google認証方式: サービスアカウントJWT自前生成（cryptoモジュール使用）→ OAuthトークン交換
+- Geminiモデル: `gemini-2.5-flash`（2026/05/07時点で稼働確認）
+
+### 次セッションの最優先タスク
 
 | # | タスク | 詳細 |
 |---|------|------|
-| 1 | 設計書の最終版をGitHubにpush | Architecture_Plan_v3_完全版とProductArchの最新版をDownloadsからnorthstar_cleanにコピーしてpush |
-| 2 | Google DriveにReportsフォルダを手動作成 | Reports/OPS・RSC・BizDev・FIN・DEVの5サブフォルダを作成 |
-| 3 | n8nにLINE Messaging APIをHTTP Requestで登録 | チャンネルアクセストークンをn8nのCredentialsに登録 |
-| 4 | 社長のLINEにNorthStarボット（@535qeekl）を友達登録 | QRコードまたはIDで追加 |
-| 5 | 社長のLINEユーザーIDを取得 | n8nからLINEにテストメッセージを送るためのユーザーIDが必要 |
-| 6 | VPSにスワップ領域追加 | メモリ対策。ターミナルで設定 |
-| 7 | n8n Google Drive連携設定 | OAuth認証でGoogle DriveをCredentialsに登録 |
-| 8 | n8n Google Calendar連携設定 | OAuth認証でGoogle CalendarをCredentialsに登録 |
-| 9 | 朝7:00ブリーフィングワークフロー構築 | Googleカレンダー取得→Gemini整形→LINE通知 |
-| 10 | 夕19:00リフレクションワークフロー構築 | 結果集計→Gemini整形→LINE通知 |
+| 10 | 夕19:00リフレクションワークフロー構築 | 朝ブリーフィングと同様の方式で構築 |
 | 11 | 朝6:00 RSCリサーチ巡回ワークフロー構築 | 7ターゲット→Gemini解析→Google Drive保存 |
 
 ### 高優先（Phase 2）
