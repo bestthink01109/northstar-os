@@ -4,6 +4,19 @@
 
 ---
 
+## ⚠️ ストレージポリシー（絶対ルール）
+
+| 種別 | 保存先 | 具体例 |
+|------|-------|-------|
+| **データ**（生成・蓄積） | Google Drive | Dashboard、各種レポート、Signal_DB.csv、COO_Context |
+| **マニュアル・設計書** | GitHub | NORTHSTAR_MANUAL.md、Architecture_Plan_v3.md |
+| **アプリ・スクリプト** | GitHub | scripts/drive.js、Pythonアプリ |
+| **機密情報**（キー・トークン） | ローカルのみ | n8n-api.sh、oauth_tokens.json（GitHub push禁止） |
+
+> マニュアル・スクリプトを更新したら必ず GitHub に push すること。
+
+---
+
 ## 🗂 目次
 1. [自動で動くもの（n8n）](#自動)
 2. [LINEから使えるコマンド](#LINE)
@@ -98,10 +111,6 @@ Claude Opusが即座に事業影響を評価してLINEに返信・Driveに保存
 /dashboard
 ```
 
-**動作:**
-1. 今日の `Dashboard_YYYYMMDD.md` をDriveから読み込み
-2. Section 1〜7を順にセッション進行
-
 **セッション構成:**
 - **#1 Core Vision**: ビジョンコーチング・タイムライン更新
 - **#2 今日の予定・タスク**: 変更→カレンダー即反映
@@ -111,19 +120,13 @@ Claude Opusが即座に事業影響を評価してLINEに返信・Driveに保存
 - **#6 COO Strategy Report**: 今日の最終方針確定
 - **#7 Reflection**: 今日の結果・明日の方向性
 
----
-
 ### /save-context — COOコンテキスト保存
 
 ```
 /save-context
 ```
 
-**動作**: セッション内容を `COO_Context_YYYYMMDD.md` としてDriveに保存
-
-**次回セッション開始時**: 自動的に最新のCOO_Contextを読み込む
-
----
+セッション内容を `COO_Context_YYYYMMDD.md` としてDriveに保存。
 
 ### /manual — このマニュアルを表示
 
@@ -133,27 +136,10 @@ Claude Opusが即座に事業影響を評価してLINEに返信・Driveに保存
 
 ---
 
-### drive.js — ローカルから直接操作
-
-実行場所: `/Users/fuminariaksse/.config/gdrive-mcp/`
-
-```bash
-cd /Users/fuminariaksse/.config/gdrive-mcp
-
-# 今日のダッシュボードを読む
-node drive.js read-today
-
-# 今日のダッシュボードを更新（内容を/tmp/new.mdに書いてから）
-node drive.js write-today /tmp/new.md
-
-# ファイル検索
-node drive.js search "RSC_全ターゲット"
-node drive.js search "Dashboard_202605"
-```
-
----
-
 ## 4. drive.js コマンド一覧 {#drive}
+
+**GitHub**: https://github.com/bestthink01109/northstar-os/blob/main/scripts/drive.js
+**ローカル**: `/Users/fuminariaksse/.config/gdrive-mcp/drive.js`
 
 ### Driveファイル操作
 
@@ -164,7 +150,6 @@ node drive.js search "Dashboard_202605"
 | `node drive.js write <fileId> [filePath]` | ファイルを更新 |
 | `node drive.js create <name> <parentId> [filePath]` | 新規ファイル作成 |
 | `node drive.js search <keyword>` | キーワードで検索 |
-| `node drive.js mkdir <name> [parentId]` | フォルダ作成 |
 
 ### ダッシュボード操作
 
@@ -179,19 +164,11 @@ node drive.js search "Dashboard_202605"
 
 | コマンド | 説明 |
 |---------|------|
-| `node drive.js calendars` | カレンダー一覧 |
 | `node drive.js events [calendarId]` | 今後1週間の予定 |
-| `node drive.js events-range <calId> <from> <to>` | 期間指定で予定一覧 |
-| `node drive.js get-event <calId> <eventId>` | イベント詳細 |
 | `node drive.js add-event <calId> <title> <date> [time]` | 予定追加 |
 | `node drive.js add-task <title> <date>` | タスク追加（BUN_CEO） |
 | `node drive.js complete-task <eventId> [calId]` | タスクを[完了]にする |
-| `node drive.js update-event <calId> <eventId> <field> <value>` | 予定更新 |
-
-**update-event の field 指定:**
-- `title` : タイトル変更
-- `date` : 日付変更（例: `2026-05-10`）
-- `time` : 時刻変更（例: `15:00`）
+| `node drive.js update-event <calId> <eventId> <field> <value>` | 予定更新（field: title/date/time） |
 
 **よく使うカレンダーID:**
 ```
@@ -207,23 +184,18 @@ TASK: a0c7e0a0c3b9038b4a54b546d6119480d08d047ac3676811ea6fd1b00da46dc2@group.cal
 Google Drive/
 ├── 📊 Reports/                    ID: 1uM990vQViDJ5BTer9_XGJZUZsJEKD3y_
 │   ├── DEV/                       ID: 1axzPX0xjgWxVLTHLQHZf-7kSLO2Q_9kZ
-│   │   └── n8n_backup_YYYYMMDD.json  ← 毎週日曜3:00自動
 │   ├── RSC/                       ID: 1I_68Pimq8jKjq6xfPMAeD22oeAHc8mTf
 │   │   ├── FUKUOKA/               ID: 1QxbuEYftnqZh4GnqdWAZ7PEWJGZor0GW
 │   │   ├── KUMAMOTO/              ID: 1q5SwCxPyGJNA_aJlsKUaU48rLcYgM1-k
 │   │   ├── MHLW/                  ID: 14lmvkwbJ3o4-xHxZ32R5edsYBhyNyuUt
 │   │   └── AI/                    ID: 131j6YvcknIA2KPfIXW_uR7xCsPS7Eqc8
-│   │   └── RSC_全ターゲット_YYYYMMDD.md  ← 毎朝6:00自動
 │   ├── BizDev/                    ID: 1ItQqd-_I3ARoUkclvJc4pVU2HMMlq_dS
-│   │   ├── Signal_DB.csv          ID: 1iCRjElopMprCT8l-yPvriGWVjWizRXuh
-│   │   ├── BIZ_市場スキャン_YYYYMMDD.md  ← 毎週月曜8:00自動
-│   │   └── BIZ_戦略更新_YYYYMMDD.md      ← [戦略評価]コマンド時
+│   │   └── Signal_DB.csv          ID: 1iCRjElopMprCT8l-yPvriGWVjWizRXuh
 │   ├── FIN/                       ID: 1kXD9larver4TTgWAJAVeBLWujb2eaM70
-│   │   └── FIN_月次レポート_YYYYMM.md    ← 毎月1日9:00自動
 │   └── OPS/                       ID: 1ahvEniXrxUiPH50yc1A1g6E4qcFdLccv
 └── research/Daily_Report/         ID: 1SGCPerV8CCHT6CcDI8-E6G2JbbmNmsp8
-    ├── Dashboard_YYYYMMDD.md      ← 毎朝7:00自動作成
-    └── COO_Context_YYYYMMDD.md    ← /save-context で保存
+    ├── Dashboard_YYYYMMDD.md      ← 毎朝7:00自動作成（データ）
+    └── COO_Context_YYYYMMDD.md    ← /save-context で保存（データ）
 ```
 
 ---
@@ -232,10 +204,8 @@ Google Drive/
 
 | カレンダー | ID | 用途 |
 |---------|-----|------|
-| メインカレンダー（赤瀬文成） | `bestthink01109@gmail.com` | 予定・ミーティング |
-| BUN_CEOタスク | `a0c7e0a0c3b9038b4a54b546d6119480d08d047ac3676811ea6fd1b00da46dc2@group.calendar.google.com` | タスク管理（[完了]で永久保存） |
-
-**ルール:** 予定はメインカレンダー、タスクはBUN_CEOカレンダーに厳格分離。タスク削除禁止（[完了]に書き換え）。
+| メインカレンダー | `bestthink01109@gmail.com` | 予定・ミーティング |
+| BUN_CEOタスク | `a0c7e0a0c3b9038b4a54b546d6119480d08d047ac3676811ea6fd1b00da46dc2@group.calendar.google.com` | タスク（[完了]で永久保存） |
 
 ---
 
@@ -254,39 +224,23 @@ Google Drive/
 | FIN月次レポート | uxIDllsGUiDilADI | 毎月1日9:00 |
 
 **n8n管理画面:** `http://162.43.78.67:5678`
-**n8nヘルパー:** `/Users/fuminariaksse/.config/gdrive-mcp/n8n-api.sh`
 
 ---
 
 ## 8. トラブル対応 {#trouble}
 
-### LINEにブリーフィングが届かない
 ```bash
+# ワークフロー実行状況確認
 node /Users/fuminariaksse/.config/gdrive-mcp/check_all_workflows.js
+
+# スケジュール設定確認
 node /Users/fuminariaksse/.config/gdrive-mcp/check_schedules.js
-```
 
-### Dashboardが作成されていない
-```bash
+# Dashboardを手動作成
 node /Users/fuminariaksse/.config/gdrive-mcp/drive.js create-dashboard
-```
 
-### カレンダー操作コマンドが失敗する
-```bash
-node /Users/fuminariaksse/.config/gdrive-mcp/drive.js calendars
-node /Users/fuminariaksse/.config/gdrive-mcp/drive.js events bestthink01109@gmail.com
-```
-
-### Signal DBを確認したい
-```bash
+# Signal DB確認
 node /Users/fuminariaksse/.config/gdrive-mcp/drive.js read 1iCRjElopMprCT8l-yPvriGWVjWizRXuh
-```
-
-### n8nにアクセスできない
-```
-VPS: 162.43.78.67
-n8n: http://162.43.78.67:5678
-SSH: ssh root@162.43.78.67
 ```
 
 ---
@@ -294,20 +248,20 @@ SSH: ssh root@162.43.78.67
 ## ⚡ クイックリファレンス
 
 ```
-LINE送信例:
+LINE:
   タスク 明日 A社提案書作成
-  予定 5/15 10:00 B社ミーティング
-  承認 新規プロダクト開発方針
-  [戦略評価] C社から失注（競合に負けた）
+  予定 5/15 10:00 B社MTG
+  承認 新規プロダクト開発
+  [戦略評価] C社から失注
 
 Claude Code:
-  /dashboard    → 朝夕セッション開始
+  /dashboard    → 朝夕セッション
   /save-context → COOコンテキスト保存
-  /manual       → このマニュアルを表示
+  /manual       → このマニュアル
 
-drive.js よく使うもの:
-  node drive.js read-today                       → 今日のDashboard読む
-  node drive.js add-task "タスク名" "2026-05-10"  → タスク追加
-  node drive.js complete-task <eventId>          → タスク完了
-  node drive.js events bestthink01109@gmail.com  → 予定一覧
+drive.js:
+  node drive.js read-today
+  node drive.js add-task "タスク名" "2026-05-10"
+  node drive.js complete-task <eventId>
+  node drive.js events bestthink01109@gmail.com
 ```
