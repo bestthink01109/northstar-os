@@ -78,22 +78,20 @@ Google Drive/
 | GitHub account | GitHub API | コンテキストファイル参照 |
 | Google Service Account account | Google Cloud | Google Drive・Calendar読み書き（サービスアカウント） |
 
-### 1-5. 追加予定のCredential（未登録・次セッションで登録）
+### 1-5. 追加予定のCredential（未登録）
 
-| API | 用途 | 登録優先度 |
-|-----|------|---------| 
-| LINE Messaging API | 全通知・承認・社長からの指示受信 | 最優先 |
-| Google Calendar API（OAuth） | 予定・タスク取得・更新 | 高 |
+現時点で未登録のCredentialなし。全て登録済み。（2026/05/07完了）
 
-### 1-6. LINE Messaging API設定状況（確定）
+### 1-6. LINE Messaging API設定状況（確定・完了）
 
 - LINE Developersコンソール: ログイン済み
 - プロバイダー名: NorthStar（作成済み）
 - チャンネル: NorthStar（Messaging API・作成済み）
 - ボットのベーシックID: @535qeekl
-- チャンネルアクセストークン（長期）: 発行済み（社長が控えている）
+- チャンネルアクセストークン（長期）: 発行済み・n8n登録済み
 - Channel Secret: 発行済み（社長が控えている）
-- 次のステップ: n8nにHTTP RequestノードでLINE Messaging APIを登録・社長のLINEにボットを友達登録・ユーザーID取得
+- n8n Credential「LINE Messaging API」: 登録済み（Header Auth）
+- **社長のLINEユーザーID: U803f81551a6913e836e9e55192139d26**（取得済み・2026/05/07）
 
 ### 1-7. VPS状況（確定）
 
