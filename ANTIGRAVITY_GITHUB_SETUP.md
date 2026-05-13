@@ -42,7 +42,76 @@ NorthStar OSの思想とAntigravityを一致させるための情報パッケー
 
 ---
 
-## 3. Antigravityの役割と範囲
+## 3. ファイル命名規則（絶対ルール）
+
+### 基本ルール
+- ファイル名末尾には必ず **`_YYYYMMDD`** 形式で当日の日付を付与する
+- 省略不可
+
+### 部門別プレフィックス
+
+| 部門 | プレフィックス | 例 |
+|------|------------|-----|
+| DEV（開発） | `DEV_` | `DEV_KENZAIリリースノート_20260513.md` |
+| RSC（リサーチ） | `RSC_` | `RSC_全ターゲット_20260513.md` |
+| BizDev（事業開発） | `BIZ_` | `BIZ_市場スキャン_20260513.md` |
+| FIN（財務） | `FIN_` | `FIN_月次レポート_202605.md` |
+| OPS（業務） | `OPS_` | `OPS_シフト修正報告_20260513.md` |
+| COO横断 | `COO_` | `COO_Context_20260513.md` |
+| ダッシュボード | `Dashboard_` | `Dashboard_20260513.md` |
+
+---
+
+## 4. Google Drive フォルダID一覧（保存先）
+
+成果物を保存する際は必ずこのフォルダIDを使用すること。
+
+| 部門・用途 | フォルダID | 保存ファイル例 |
+|-----------|-----------|--------------|
+| Reports/（親） | `1uM990vQViDJ5BTer9_XGJZUZsJEKD3y_` | — |
+| Reports/DEV/ | `1axzPX0xjgWxVLTHLQHZf-7kSLO2Q_9kZ` | DEV_*.md |
+| Reports/RSC/ | `1I_68Pimq8jKjq6xfPMAeD22oeAHc8mTf` | RSC_*.md |
+| Reports/RSC/FUKUOKA/ | `1QxbuEYftnqZh4GnqdWAZ7PEWJGZor0GW` | RSC_福岡_*.md |
+| Reports/RSC/KUMAMOTO/ | `1q5SwCxPyGJNA_aJlsKUaU48rLcYgM1-k` | RSC_熊本_*.md |
+| Reports/RSC/MHLW/ | `14lmvkwbJ3o4-xHxZ32R5edsYBhyNyuUt` | RSC_厚労省_*.md |
+| Reports/RSC/AI/ | `131j6YvcknIA2KPfIXW_uR7xCsPS7Eqc8` | RSC_AI_*.md |
+| Reports/BizDev/ | `1ItQqd-_I3ARoUkclvJc4pVU2HMMlq_dS` | BIZ_*.md |
+| Reports/FIN/ | `1kXD9larver4TTgWAJAVeBLWujb2eaM70` | FIN_*.md |
+| Reports/OPS/ | `1ahvEniXrxUiPH50yc1A1g6E4qcFdLccv` | OPS_*.md |
+| research/Daily_Report/ | `1SGCPerV8CCHT6CcDI8-E6G2JbbmNmsp8` | Dashboard_*.md、COO_Context_*.md |
+
+### 特別ファイル（固定ID）
+
+| ファイル | ID |
+|---------|-----|
+| Signal_DB.csv | `1iCRjElopMprCT8l-yPvriGWVjWizRXuh` |
+
+### 成果物保存コマンド（参考）
+
+```bash
+node /Users/fuminariaksse/.config/gdrive-mcp/drive.js create \
+  "BIZ_市場スキャン_20260513.md" \
+  1ItQqd-_I3ARoUkclvJc4pVU2HMMlq_dS \
+  /tmp/output.md
+```
+
+---
+
+## 5. Googleカレンダー ID
+
+| カレンダー | ID | 用途 |
+|---------|-----|------|
+| メインカレンダー | `bestthink01109@gmail.com` | 予定・ミーティング |
+| BUN_CEOタスク | `a0c7e0a0c3b9038b4a54b546d6119480d08d047ac3676811ea6fd1b00da46dc2@group.calendar.google.com` | タスク（削除禁止・[完了]で永久保存） |
+
+**ルール:**
+- 予定 → メインカレンダー
+- タスク → BUN_CEOタスクカレンダー（厳格分離）
+- タスク削除禁止 → 必ず`[完了]`に書き換える
+
+---
+
+## 6. Antigravityの役割と範囲
 
 ### できること（GitHub経由）
 - COOルール・マニュアルの参照・更新
@@ -57,9 +126,6 @@ NorthStar OSの思想とAntigravityを一致させるための情報パッケー
 - Google Drive・カレンダーへの直接APIコール
 
 ### セッション終了時の必須出力形式
-
-Antigravityはセッション終了時に以下のフォーマットで変更を出力する。  
-人間が `node session_apply.js` を実行して反映する。
 
 ```
 ===SESSION_OUTPUT_START===
@@ -78,55 +144,34 @@ SIGNAL_DB: ランク(S/A/B/C) | シグナル本文 | DASHBOARD_SESSION
 
 ---
 
-## 4. システム全体像
+## 7. システム全体像
 
 ```
 Claude Code（日常セッション・枠に余裕がある時）
   ↓ 枠が少ない時の代替
 Antigravity ← GitHubでルール・マニュアルを参照・更新
 
-n8n（VPS: 162.43.78.67:5678）
-  自動化ワークフロー（24/365稼働）:
-  - 毎日 06:00: RSCリサーチ巡回（7サイト）
-  - 毎日 07:00: 朝ブリーフィング + Dashboard作成
-  - 毎日 18:45: 部門日次報告集約
-  - 毎日 19:00: 夕リフレクション
-  - 毎週月曜 08:00: BizDevスキャン
-  - 毎週日曜 03:00: n8nバックアップ
-  - 毎週日曜 04:00: Signal DB週次分析
-  - 毎月1日 09:00: FIN月次レポート
+n8n（VPS: 162.43.78.67:5678） ← 自動化（24/365稼働）
+  06:00 RSCリサーチ巡回 → Reports/RSC/ + LINE送信
+  07:00 朝ブリーフィング → LINE + Dashboard作成
+  18:45 部門日次報告集約 → Reports/ + LINE
+  19:00 夕リフレクション → LINE + Dashboard #7
+  月08:00 BizDevスキャン → Reports/BizDev/ + LINE
+  日03:00 n8nバックアップ → Reports/DEV/
+  日04:00 Signal DB分析 → LINE
+  1日09:00 FIN月次レポート → Reports/FIN/ + LINE
 
-Google Drive
-  データ蓄積:
-  - research/Daily_Report/Dashboard_YYYYMMDD.md（毎朝自動作成）
-  - Reports/RSC/RSC_全ターゲット_YYYYMMDD.md（毎朝自動作成）
-  - Reports/BizDev/Signal_DB.csv（蓄積）
-  - Reports/BizDev/BIZ_市場スキャン_YYYYMMDD.md
-  - Reports/FIN/FIN_月次レポート_YYYYMM.md
-
-LINE（NorthStar @535qeekl）
-  社長への通知:
-  - 朝6:00: RSCリサーチ提言
-  - 朝7:00: カレンダーブリーフィング
-  - 夕18:45: 部門日次報告
-  - 夕19:00: リフレクション
-  社長からのコマンド:
-  - タスク追加 / 予定追加 / 承認 / 却下 / [戦略評価]
+LINE（NorthStar @535qeekl） ← 社長への通知 + コマンド受付
+  コマンド: タスク追加 / 予定追加 / 承認 / 却下 / [戦略評価]
 ```
 
 ---
 
-## 5. GitHubへのアクセス方法
+## 8. GitHubへのアクセス方法
 
 ### RAWファイル取得（読み取り）
 ```
 https://raw.githubusercontent.com/bestthink01109/northstar-os/main/{ファイルパス}
-```
-
-例：
-```
-https://raw.githubusercontent.com/bestthink01109/northstar-os/main/ANTIGRAVITY_PROMPT.md
-https://raw.githubusercontent.com/bestthink01109/northstar-os/main/NORTHSTAR_MANUAL.md
 ```
 
 ### GitHub API（読み書き）
@@ -140,16 +185,16 @@ PUT  https://api.github.com/repos/bestthink01109/northstar-os/contents/{path}
 
 ---
 
-## 6. セッション開始の標準手順
+## 9. セッション開始の標準手順
 
-### パターンA: Antigravityのみ（Claude Code枠節約）
+### Antigravityのみ（Claude Code枠節約）
 
 ```
 ① Antigravityに以下を貼り付け:
 「以下のURLを読んでNorthStar OS COOとしてセッションを開始してください:
 https://raw.githubusercontent.com/bestthink01109/northstar-os/main/ANTIGRAVITY_PROMPT.md」
 
-② ローカルでセッション書き出し実行:
+② ローカルでセッション書き出し:
 node /Users/fuminariaksse/.config/gdrive-mcp/session_export.js /tmp/session.txt
 
 ③ /tmp/session.txt の内容をAntigravityに貼り付け → セッション開始
@@ -160,27 +205,23 @@ node /Users/fuminariaksse/.config/gdrive-mcp/session_export.js /tmp/session.txt
 node /Users/fuminariaksse/.config/gdrive-mcp/session_apply.js /tmp/session_output.txt
 ```
 
-### パターンB: Claude Code（通常時）
-
-```
-/dashboard
-```
-
 ---
 
-## 7. Antigravityへの一言要約（コピペ用）
+## 10. Antigravityへの一言要約（コピペ用）
 
 ```
-私はBUN社長（赤瀬文成）、一人経営の会社「ノーススター経営サポート」を経営しています。
+私はBUN社長（赤瀬文成）、一人経営「ノーススター経営サポート」。
 あなたはCOO AIです。
 
 まず以下のURLを読んでください:
 https://raw.githubusercontent.com/bestthink01109/northstar-os/main/ANTIGRAVITY_PROMPT.md
 
-ルール:
-- データ(Dashboard・レポート・Signal DB) → Google Drive
+ストレージルール:
+- データ(Dashboard・レポート) → Google Drive（フォルダIDはこのファイルのセクション4参照）
 - マニュアル・スクリプト → GitHub（更新したらpush）
 - APIキー・トークン → ローカルのみ（GitHubに絶対入れない）
+- ファイル名は必ず _YYYYMMDD で終わる
+- 部門別プレフィックス: DEV_/RSC_/BIZ_/FIN_/OPS_/COO_
 - 省略・手抜き禁止
 ```
 
