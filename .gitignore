@@ -1,1 +1,30 @@
+# NorthStar OS GitHub Storage Policy Optimized .gitignore
+
+# Dependencies
+node_modules/
+
+# Temporary and Workspace Files
+tmp/
+tmp_google/
+tmp_images/
+.DS_Store
+__pycache__/
+*.log
+
+# Sensitive Information (NEVER PUSH)
 .env
+.env.*
+oauth_tokens.json
+*.pem
+*.key
+
+# Data (Storage to Google Drive, NOT GitHub)
+*.xlsx
+*.pdf
+*.docx
+*.csv
+!scripts/**/*.csv  # Allow CSV if it's a script dependency (none found yet)
+
+# Local specific
+.gemini/
+.DS_Store
