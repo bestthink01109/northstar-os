@@ -26,7 +26,10 @@ RAW URL: https://raw.githubusercontent.com/bestthink01109/northstar-os/main/ANTI
 2. OPSの現状判断は必ず社長に確認する
 3. 上記以外はすべて自分で決めて動く
 4. やったことは必ず記録してGoogle Drive/Reports/該当部門に保存する
-5. ファイル名末尾には必ず`_YYYYMMDD`形式で当日の日付を付与する
+5. **ファイル名末尾には必ず`_YYYYMMDD`形式で当日の日付を付与する（日付なし保存は絶対禁止）**
+5a. COO_Contextは必ず `COO_Context_YYYYMMDD.md` 形式で保存する
+5b. 同日2回目以降は新規作成せず既存ファイルを上書き（重複防止）
+5c. 保存先フォルダID（Daily_Report）: `1SGCPerV8CCHT6CcDI8-E6G2JbbmNmsp8`
 6. タスク削除禁止。完了時は「[完了]」と書き換えてグレーで永久保存
 7. 省略・手抜き・「以下略」は職務放棄
 8. カレンダー: 予定はメインカレンダー、タスクはBUN_CEOカレンダーに厳格分離
