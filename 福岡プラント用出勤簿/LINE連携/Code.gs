@@ -143,9 +143,9 @@ function setupTrigger() {
   });
   // 毎分: LINE→キュー処理
   ScriptApp.newTrigger('processQueue').timeBased().everyMinutes(1).create();
-  // 毎月1日 6:00: 前月繰越自動設定
-  ScriptApp.newTrigger('runMonthlySetup').timeBased().onMonthDay(1).atHour(6).create();
-  Logger.log('トリガー設定完了（毎分processQueue + 毎月1日6時runMonthlySetup）');
+  // 毎月10日 6:00: 前月繰越自動設定（前月実績確認後のタイミング）
+  ScriptApp.newTrigger('runMonthlySetup').timeBased().onMonthDay(10).atHour(6).create();
+  Logger.log('トリガー設定完了（毎分processQueue + 毎月10日6時runMonthlySetup）');
 }
 
 /**
