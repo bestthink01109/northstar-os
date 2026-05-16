@@ -69,37 +69,61 @@ function doPost(e) {
 
 /**
  * 3. キュー処理（毎分トリガーで自動実行）
+ * ・未処理メッセージをGemini解析 → 月別SSに書き込み
+ * ・末尾で現場マスタの変更を検知し、変更があればAA列を自動バックフィル
  */
 function processQueue() {
   const ss = SpreadsheetApp.openById(MASTER_SS_ID);
   const queueSheet = ss.getSheetByName(QUEUE_SHEET_NAME);
-  if (!queueSheet || queueSheet.getLastRow() < 2) return;
 
-  const staffList = getStaffList(ss);
-  const data = queueSheet.getDataRange().getValues();
+  let monthlySS = null; // 今回処理した月別SS（バックフィルに再利用）
 
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][2] !== '未処理') continue;
+  if (queueSheet && queueSheet.getLastRow() >= 2) {
+    const staffList = getStaffList(ss);
+    const data = queueSheet.getDataRange().getValues();
 
-    const userMessage = String(data[i][1]);
-    queueSheet.getRange(i + 1, 3).setValue('処理中');
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][2] !== '未処理') continue;
 
-    try {
-      const aiResult = parseAttendanceWithGemini(userMessage, staffList);
-      if (aiResult && aiResult.length > 0) {
-        // 月別SSを確保し、一括入力マスターと実績ログの両方に書き込む
-        const monthlySS = ensureMonthlySSExists(aiResult);
-        writeToMasterSheet(monthlySS, aiResult, staffList);
-        writeToResultLog(monthlySS, aiResult, userMessage);
-        queueSheet.getRange(i + 1, 3).setValue('完了');
-      } else {
-        queueSheet.getRange(i + 1, 3).setValue('スキップ（勤怠情報なし）');
-        notifySkipToLine(userMessage, 'Geminiが勤怠情報を検出できませんでした');
+      const userMessage = String(data[i][1]);
+      queueSheet.getRange(i + 1, 3).setValue('処理中');
+
+      try {
+        const aiResult = parseAttendanceWithGemini(userMessage, staffList);
+        if (aiResult && aiResult.length > 0) {
+          monthlySS = ensureMonthlySSExists(aiResult);
+          writeToMasterSheet(monthlySS, aiResult, staffList);
+          writeToResultLog(monthlySS, aiResult, userMessage);
+          queueSheet.getRange(i + 1, 3).setValue('完了');
+        } else {
+          queueSheet.getRange(i + 1, 3).setValue('スキップ（勤怠情報なし）');
+          notifySkipToLine(userMessage, 'Geminiが勤怠情報を検出できませんでした');
+        }
+      } catch (err) {
+        queueSheet.getRange(i + 1, 3).setValue('エラー: ' + err.message);
+        Logger.log('processQueue エラー [行' + (i + 1) + ']: ' + err.message);
       }
-    } catch (err) {
-      queueSheet.getRange(i + 1, 3).setValue('エラー: ' + err.message);
-      Logger.log("processQueue エラー [行" + (i+1) + "]: " + err.message);
     }
+  }
+
+  // ── 現場マスタ変更の自動検知・バックフィル ──────────────────
+  // キュー処理の有無にかかわらず毎分チェック。
+  // マスタが変更されていた場合のみ backfillAA() を実行する（コスト最小化）。
+  try {
+    // 今月の月別SSを取得（キュー処理で取得済みでなければ検索）
+    if (!monthlySS) {
+      const ym = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMM');
+      const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+      const f = folder.getFilesByName(ym + '_福岡プラント出勤簿');
+      if (f.hasNext()) monthlySS = SpreadsheetApp.openById(f.next().getId());
+    }
+    if (monthlySS && checkSiteMasterChanged(monthlySS)) {
+      Logger.log('現場マスタ変更を検知 → AA列自動バックフィル開始');
+      backfillAA(monthlySS.getId());
+      Logger.log('AA列自動バックフィル完了');
+    }
+  } catch (e) {
+    Logger.log('AA自動バックフィルエラー（非致命的）: ' + e.message);
   }
 }
 
@@ -1037,6 +1061,25 @@ function addSiteToMaster(ss, siteName, sourceMsg) {
 // 後方互換ラッパー（現場マスタに統合済み）
 function getLocationMappings(ss) { return getSiteMasterData(ss).mappings; }
 function setupFuzzyLocationDict() { return setupSiteMaster(); }
+
+/**
+ * 現場マスタが前回から変更されたか確認する（ハッシュをスクリプトプロパティに保存）
+ * 変更があれば true を返し、プロパティを更新する
+ */
+function checkSiteMasterChanged(ss) {
+  const sheet = ss.getSheetByName('現場マスタ');
+  if (!sheet || sheet.getLastRow() < 2) return false;
+
+  const currentHash = sheet.getDataRange().getValues().map(r => r.join('|')).join('||');
+  const propKey = 'SITE_MASTER_HASH_' + ss.getId().substring(0, 16);
+  const stored = PropertiesService.getScriptProperties().getProperty(propKey) || '';
+
+  if (currentHash !== stored) {
+    PropertiesService.getScriptProperties().setProperty(propKey, currentHash);
+    return true;  // 変更あり
+  }
+  return false;   // 変更なし
+}
 
 /**
  * 実績シートの現場名を現場マスタで照合し、全個人シートのAA列を遡及修正
