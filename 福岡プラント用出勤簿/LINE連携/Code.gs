@@ -167,18 +167,15 @@ function writeToMasterSheet(ss, aiResult, staffList) {
   const data = inputSheet.getDataRange().getValues();
 
   aiResult.forEach(entry => {
-    // 現場名をゆらぎ辞書で正規化
+    // 現場名をゆらぎ辞書で正規名（正式名称）に正規化
+    // ※ normalizeSiteNameでスペースゆらぎも吸収してから照合する
     const rawPlace = entry.場所 ? entry.場所.trim() : '';
-    if (rawPlace && siteData.mappings[rawPlace]) {
-      const canonical = siteData.mappings[rawPlace];
-      Logger.log('現場名正規化: ' + rawPlace + ' → ' + canonical);
-
-      // F列（実績 現場名行）に書く値を決定
-      // 出張の場合は「出張先地名」、現場/工場は「正規名」
-      const siteType = siteData.types[canonical] || '';
-      const dest     = siteData.dests[canonical] || '';
-      entry.場所 = (siteType === '出張' && dest) ? dest : canonical;
-      entry._canonical = canonical; // 種別ルックアップ用に保持
+    const normPlace = normalizeSiteName(rawPlace);
+    if (normPlace && siteData.mappings[normPlace]) {
+      const canonical = siteData.mappings[normPlace];
+      if (canonical !== rawPlace) Logger.log('現場名正規化: ' + rawPlace + ' → ' + canonical);
+      entry.場所 = canonical;      // 常に正式名称を実績に書く
+      entry._canonical = canonical;
     } else {
       entry._canonical = rawPlace;
     }
@@ -1033,9 +1030,20 @@ function setupSiteMaster() {
 }
 
 /**
+ * 現場名を正規化する（スペース・全角スペース・記号ゆらぎを吸収）
+ * マスタ照合前に必ずこの関数を通す
+ */
+function normalizeSiteName(s) {
+  return String(s || '')
+    .trim()
+    .replace(/[\s　]+/g, ''); // 半角・全角スペースを全て除去
+}
+
+/**
  * 現場マスタシートからマッピング・種別・出張先名データを取得
  * @returns { mappings:{ゆらぎ→正規名}, types:{正規名→種別}, dests:{正規名→出張先名} }
  * シート列: A=正規名, B=種別, C=ゆらぎ, D=出張先名, E=登録日, F=備考
+ * ※ mappingsのキーはスペース除去済み（normalizeSiteNameで揃えること）
  */
 function getSiteMasterData(ss) {
   const sheet = ss.getSheetByName('現場マスタ');
@@ -1045,22 +1053,29 @@ function getSiteMasterData(ss) {
   const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues();
   const mappings = {}, types = {}, dests = {};
 
+  // キーにスペース除去版を追加して、スペースゆらぎにも対応
+  const addEntry = (key, canonical, type, dest) => {
+    const k = normalizeSiteName(key);
+    if (!k) return;
+    mappings[k] = canonical;
+    types[k]    = type;
+    dests[k]    = dest;
+  };
+
   data.forEach(row => {
-    const name     = String(row[0]).trim();
-    const type     = String(row[1]).trim();
-    const variStr  = String(row[2]).trim();
-    const dest     = String(row[3] || '').trim(); // 出張先名（地名）
+    const name    = String(row[0]).trim();
+    const type    = String(row[1]).trim();
+    const variStr = String(row[2]).trim();
+    const dest    = String(row[3] || '').trim();
     if (!name) return;
 
-    mappings[name] = name;
-    types[name]    = type;
-    dests[name]    = dest;
+    // 正規名自体を登録
+    addEntry(name, name, type, dest);
 
-    variStr.split(',').forEach(v => {
-      const vt = v.trim();
-      if (vt) { mappings[vt] = name; types[vt] = type; dests[vt] = dest; }
-    });
+    // ゆらぎを登録
+    variStr.split(',').forEach(v => addEntry(v, name, type, dest));
   });
+
   return { mappings, types, dests };
 }
 
@@ -1157,9 +1172,9 @@ function backfillAA(ssId) {
       const siteName = String(rawSite).trim();
       if (!siteName) return;
 
-      // 正規化して種別を取得
-      const canonicalName = siteData.mappings[siteName] || siteName;
-      const siteType = siteData.types[canonicalName] || siteData.types[siteName] || '';
+      // スペース除去してからマスタ照合
+      const canonicalName = siteData.mappings[normalizeSiteName(siteName)] || siteName;
+      const siteType = siteData.types[canonicalName] || '';
       if (!siteType) return;
 
       const day = dayIdx + 1;          // 1〜31
@@ -1364,10 +1379,11 @@ function clearDays(lastName, fromDay, ssId) {
 }
 
 /**
- * backfillAA を拡張: F列（現場名）も出張先地名で上書きする
- * （過去データで F列が正規名になっている場合の修正）
+ * 実績シートの現場名行を正規化（ゆらぎ→正式名称に統一）
+ * + 出勤状態が設定済みで現場名が空のセルを未登録としてカウント
+ * 全社員・全日対象
  */
-function backfillFColumn(ssId) {
+function normalizeJissekiSiteNames(ssId) {
   const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
   const files = folder.getFilesByName('202605_福岡プラント出勤簿');
   const ss = ssId
@@ -1379,39 +1395,194 @@ function backfillFColumn(ssId) {
   const jisseki = ss.getSheetByName('実績') || ss.getSheetByName('一括入力マスター');
   if (!jisseki) return 'ERROR: 実績シートなし';
 
-  const jData = jisseki.getDataRange().getValues();
+  const lastRow = jisseki.getLastRow();
+  const lastCol = jisseki.getLastColumn();
+  const jData = jisseki.getRange(1, 1, lastRow, lastCol).getValues();
+
   let fixed = 0;
+  const missing = []; // 出勤状態あり・現場名なしの日
   const log = [];
 
-  // 社員ごとに現場名行を確認
   for (let r = 2; r < jData.length; r++) {
     const name = String(jData[r][0]).trim();
-    if (!name) continue;
-    const siteRow = r + 2; // 現場名行（1-based）= nameRow + 1
-    const lastCol = jisseki.getLastColumn();
+    if (!name) continue; // 氏名なし行はスキップ（現場名行・残業行など）
 
-    for (let col = 3; col <= lastCol; col++) {
-      const rawSite = String(jisseki.getRange(siteRow, col).getValue()).trim();
+    const statusRow = r;         // 出勤状態行（0-indexed）
+    const siteRow   = r + 1;     // 現場名行（0-indexed）
+
+    for (let col = 2; col < lastCol; col++) { // col=2 → C列（1日目）
+      const status  = String(jData[statusRow][col]).trim();
+      const rawSite = String(jData[siteRow][col]).trim();
+      const day = col - 1; // 1〜31
+
+      // 出勤があるが現場名が空
+      if (status && !rawSite) {
+        missing.push(name + ' ' + day + '日（出勤状態=' + status + '）');
+        continue;
+      }
       if (!rawSite) continue;
 
-      const canonical = siteData.mappings[rawSite] || rawSite;
-      const siteType  = siteData.types[canonical] || '';
-      const dest      = siteData.dests[canonical] || '';
-
-      if (siteType === '出張' && dest && rawSite !== dest) {
-        jisseki.getRange(siteRow, col).setValue(dest);
-        log.push(name + ' ' + (col - 2) + '日: F列 ' + rawSite + ' → ' + dest);
+      // スペース除去してからマスタ照合→正規名に変換
+      const canonical = siteData.mappings[normalizeSiteName(rawSite)] || rawSite;
+      if (canonical !== rawSite) {
+        jisseki.getRange(siteRow + 1, col + 1).setValue(canonical); // 1-based
+        log.push(name + ' ' + day + '日: [' + rawSite + '] → [' + canonical + ']');
         fixed++;
       }
     }
   }
 
   SpreadsheetApp.flush();
+  // AA列・F列も連動更新
+  backfillAA(ss.getId());
 
-  // AA列もバックフィル（F列の値が変わったので再実行）
-  backfillAA(ss ? ss.getId() : null);
+  let result = '✅ 実績現場名正規化完了\n修正: ' + fixed + '件\n';
+  if (log.length) result += '\n【修正済み】\n' + log.join('\n');
+  if (missing.length) result += '\n\n【⚠ 出勤状態あり・現場名未入力（要確認）】\n' + missing.join('\n');
+  return result;
+}
 
-  return '✅ F列バックフィル完了\n修正: ' + fixed + '件\n' + log.join('\n');
+/**
+ * 特定社員の実績シート＋個人シートの1〜31日の状態を診断して返す
+ */
+function diagnoseEmployee(lastName) {
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName('202605_福岡プラント出勤簿');
+  const ss = files.hasNext() ? SpreadsheetApp.openById(files.next().getId()) : null;
+  if (!ss) return 'ERROR: SSなし';
+
+  const masterSS = SpreadsheetApp.openById(MASTER_SS_ID);
+  const staffList = getStaffList(masterSS);
+  const staff = staffList.find(s => s.lastName === lastName || s.fullName === lastName);
+  if (!staff) return 'ERROR: ' + lastName + ' が社員マスタに存在しません';
+
+  const jisseki = ss.getSheetByName('実績');
+  const jData = jisseki.getDataRange().getValues();
+  let nameRow = -1;
+  for (let r = 2; r < jData.length; r++) {
+    if (String(jData[r][0]).trim() === staff.fullName) { nameRow = r + 1; break; }
+  }
+  if (nameRow === -1) return 'ERROR: 実績に ' + staff.fullName + ' なし';
+
+  const lines = ['=== ' + staff.fullName + ' 実績診断 (1〜15日) ==='];
+  lines.push('実績シート 出勤状態行: ' + nameRow + ', 現場名行: ' + (nameRow + 1));
+
+  for (let day = 1; day <= 15; day++) {
+    const col = day + 2;
+    const status = String(jisseki.getRange(nameRow,     col).getValue()).trim();
+    const site   = String(jisseki.getRange(nameRow + 1, col).getValue()).trim();
+    lines.push('Day' + day + ': 出勤状態=[' + status + '] 現場名=[' + site + ']');
+  }
+
+  // 個人シートのAA列も確認
+  const pSheet = ss.getSheetByName(staff.fullName);
+  if (pSheet) {
+    lines.push('\n=== 個人シート AA列（備考/現場区分）===');
+    for (let day = 1; day <= 15; day++) {
+      const aa = String(pSheet.getRange(day + 3, 27).getValue()).trim();
+      lines.push('Day' + day + ' AA=[' + aa + ']');
+    }
+  }
+  return lines.join('\n');
+}
+
+/**
+ * 出勤状態が設定済みで現場名が空の日に、指定現場名を補完する
+ * bulkFillSiteと異なり「出勤状態がすでにある日」にのみ書き込む
+ *
+ * @param {string} lastName    - 社員苗字
+ * @param {string} siteOrAlias - 現場名またはゆらぎ
+ * @param {string} [ssId]      - 省略時は202605 SS
+ */
+function fillMissingSites(lastName, siteOrAlias, ssId) {
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName('202605_福岡プラント出勤簿');
+  const ss = ssId
+    ? SpreadsheetApp.openById(ssId)
+    : (files.hasNext() ? SpreadsheetApp.openById(files.next().getId()) : null);
+  if (!ss) return 'ERROR: SSが見つかりません';
+
+  const masterSS = SpreadsheetApp.openById(MASTER_SS_ID);
+  const staffList = getStaffList(masterSS);
+  const staff = staffList.find(s => s.lastName === lastName || s.fullName === lastName);
+  if (!staff) return 'ERROR: 社員 "' + lastName + '" が見つかりません';
+
+  const siteData = getSiteMasterData(ss);
+  const canonical = siteData.mappings[siteOrAlias] || siteOrAlias;
+
+  const jisseki = ss.getSheetByName('実績') || ss.getSheetByName('一括入力マスター');
+  if (!jisseki) return 'ERROR: 実績シートなし';
+
+  const jData = jisseki.getDataRange().getValues();
+  let nameRow = -1;
+  for (let r = 2; r < jData.length; r++) {
+    if (String(jData[r][0]).trim() === staff.fullName) { nameRow = r + 1; break; }
+  }
+  if (nameRow === -1) return 'ERROR: 実績に "' + staff.fullName + '" が見つかりません';
+
+  const statusRow = nameRow;
+  const siteRow   = nameRow + 1;
+  const lastCol   = jisseki.getLastColumn();
+  let filled = 0;
+  const log = [];
+
+  for (let col = 3; col <= lastCol; col++) {
+    const status  = String(jisseki.getRange(statusRow, col).getValue()).trim();
+    const existing = String(jisseki.getRange(siteRow, col).getValue()).trim();
+    const day = col - 2;
+
+    // 出勤状態あり＆現場名なしの日のみ補完
+    if (status && !existing) {
+      jisseki.getRange(siteRow, col).setValue(canonical);
+      log.push(day + '日（出勤状態=' + status + '）→ ' + canonical);
+      filled++;
+    }
+  }
+
+  SpreadsheetApp.flush();
+  backfillAA(ss.getId());
+
+  return '✅ ' + staff.fullName + ': ' + filled + '日分の現場名を補完\n' + log.join('\n');
+}
+
+/**
+ * 個人シートのJ37・K37・L37（出張先集計）を VLOOKUP(F列, 現場マスタ, 出張先名) に更新
+ * F列が正式名称 → マスタのdest列で地名（千葉など）に変換して表示する
+ */
+function fixRow37Formulas(ssId) {
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ','現場マスタ'];
+  const targets = [];
+  if (ssId) {
+    targets.push(SpreadsheetApp.openById(ssId));
+  } else {
+    targets.push(SpreadsheetApp.openById(MASTER_SS_ID));
+    const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+    const f = folder.getFilesByName('202605_福岡プラント出勤簿');
+    if (f.hasNext()) targets.push(SpreadsheetApp.openById(f.next().getId()));
+  }
+
+  // J37: 出張先1件目（F列の正式名称→マスタD列で地名変換）
+  // VLOOKUP(正式名称, 現場マスタ!A:D, 4, FALSE) で出張先名（dest）を取得
+  // destが空なら正式名称をそのまま返す
+  const makeRow37Formula = (n) => {
+    const idx = n - 1; // SMALL の順番（1,2,3）
+    return '=IFERROR(IF(INDEX($F:$F,SMALL($BM$4:$BM$34,' + n + '))="",'
+         + '"",IFERROR(VLOOKUP(INDEX($F:$F,SMALL($BM$4:$BM$34,' + n + ')),'
+         + '現場マスタ!$A:$D,4,FALSE),'
+         + 'INDEX($F:$F,SMALL($BM$4:$BM$34,' + n + ')))),"")';
+  };
+
+  const results = [];
+  targets.forEach(ss => {
+    ss.getSheets().filter(s => !SKIP.includes(s.getName())).forEach(sheet => {
+      sheet.getRange(37, 10).setFormula(makeRow37Formula(1)); // J37
+      sheet.getRange(37, 11).setFormula(makeRow37Formula(2)); // K37
+      sheet.getRange(37, 12).setFormula(makeRow37Formula(3)); // L37
+      results.push('[更新] ' + ss.getName() + ' > ' + sheet.getName());
+    });
+    SpreadsheetApp.flush();
+  });
+  return '✅ J37/K37/L37 数式更新完了\n' + results.join('\n');
 }
 
 /**
