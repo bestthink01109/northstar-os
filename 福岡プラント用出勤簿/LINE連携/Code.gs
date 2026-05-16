@@ -676,9 +676,23 @@ function formatAttendanceSheets(ss) {
     // A列（1列目）を非表示
     sheet.hideColumns(1, 1);
 
-    // AE列(31列目)より後の計算補助列を非表示
+    // AF(32)以降の列表示制御
+    // ・AF〜AJ(32〜36): 未使用または実績参照列 → 非表示
+    // ・AK(37)「例外出社」/ AL(38)「例外退社」: ユーザー入力列 → 表示（印刷範囲外なのでPDFには出ない）
+    // ・AM(39)以降: 未使用・計算補助列 → 非表示
     const totalCols = sheet.getLastColumn();
-    if (totalCols > 31) sheet.hideColumns(32, totalCols - 31);
+    if (totalCols > 31) {
+      // AF〜AJ を非表示（5列）
+      if (totalCols >= 36) sheet.hideColumns(32, 5);
+      // AK・AL を表示（例外出社/退社）
+      if (totalCols >= 38) {
+        sheet.showColumns(37, 2);
+        sheet.setColumnWidth(37, 42);
+        sheet.setColumnWidth(38, 42);
+      }
+      // AM(39)以降を非表示
+      if (totalCols >= 39) sheet.hideColumns(39, totalCols - 38);
+    }
 
     // X2（氏名ラベル）を右揃えに設定
     sheet.getRange(2, 24).setHorizontalAlignment('right');
@@ -979,6 +993,164 @@ function fixPhase2Formulas(ssId) {
   const summary = results.join('\n');
   Logger.log(summary);
   return '✅ Phase2修正完了\n' + summary;
+}
+
+/**
+ * J4・P4の完全な数式をテキストで返す（修正前の確認用）
+ */
+function getTimeCellFormulas() {
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName('202605_福岡プラント出勤簿');
+  const ss = files.hasNext() ? SpreadsheetApp.openById(files.next().getId()) : SpreadsheetApp.openById(MASTER_SS_ID);
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ'];
+  const sheet = ss.getSheets().find(s => !SKIP.includes(s.getName()));
+  const j4 = sheet.getRange(4, 10).getFormula();
+  const p4 = sheet.getRange(4, 16).getFormula();
+  const result = 'J4=' + j4 + '\n\nP4=' + p4;
+  Logger.log(result);
+  return result;
+}
+
+/**
+ * J4/P4の数式の旧D列値「現場/出張」を新値「出勤」に修正 + AK/AL列を表示
+ * → 202605 SS・MASTER SS の全個人シートに適用（1回限り実行）
+ */
+function fixColumnFormulasAndVisibility() {
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ'];
+
+  // 202605 SS を参照元として取得
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName('202605_福岡プラント出勤簿');
+  const refSS = files.hasNext() ? SpreadsheetApp.openById(files.next().getId()) : SpreadsheetApp.openById(MASTER_SS_ID);
+  const refSheet = refSS.getSheets().find(s => !SKIP.includes(s.getName()));
+
+  // 現在のJ4・P4数式を読み取り
+  const origJ4 = refSheet.getRange(4, 10).getFormula();
+  const origP4 = refSheet.getRange(4, 16).getFormula();
+
+  // 旧D列値 "現場" "出張" を "出勤" に置換
+  // 確認済みパターン: OR($D4="現場",$D4="出張",$D4="休出",$D4="振出")
+  //              → OR($D4="出勤",$D4="休出",$D4="振出")
+  const fixDCol = (f) =>
+    f.replace(/"現場",\$D\d+="出張",/g, '"出勤",')  // メインパターン: 現場,出張 → 出勤
+     .replace(/,\$D\d+="現場"/g, '')                 // 末尾に現場が残った場合の除去
+     .replace(/,\$D\d+="出張"/g, '');                // 末尾に出張が残った場合の除去
+
+  const newJ4 = fixDCol(origJ4);
+  const newP4 = fixDCol(origP4);
+
+  const lines = ['J4 修正前: ' + origJ4, 'J4 修正後: ' + newJ4, '', 'P4 修正前: ' + origP4, 'P4 修正後: ' + newP4];
+
+  // 適用対象SS（202605 + MASTER）
+  const targets = [refSS];
+  const masterSS = SpreadsheetApp.openById(MASTER_SS_ID);
+  if (refSS.getId() !== MASTER_SS_ID) targets.push(masterSS);
+
+  targets.forEach(ss => {
+    ss.getSheets().filter(s => !SKIP.includes(s.getName())).forEach(sheet => {
+      const lastCol = sheet.getLastColumn();
+
+      // J4:J34 に修正数式を適用（GASが行番号を自動調整）
+      sheet.getRange(4, 10, 31, 1).setFormula(newJ4);
+      // P4:P34 に修正数式を適用
+      sheet.getRange(4, 16, 31, 1).setFormula(newP4);
+
+      // ── 列表示/非表示の修正 ──
+      // まず AF(32)以降を全非表示
+      if (lastCol > 31) sheet.hideColumns(32, lastCol - 31);
+      // AK(37)・AL(38)=例外出社/退社 → 表示（ユーザー入力列）
+      if (lastCol >= 38) {
+        sheet.showColumns(37, 2);
+        sheet.setColumnWidth(37, 42); // AK: 例外出社
+        sheet.setColumnWidth(38, 42); // AL: 例外退社
+      }
+
+      lines.push('[修正] ' + ss.getName() + ' > ' + sheet.getName());
+    });
+    SpreadsheetApp.flush();
+  });
+
+  return '✅ 完了\n' + lines.join('\n');
+}
+
+/**
+ * 列構造完全診断：非表示列・入力列・数式の全体マップをDriveに書き出す
+ */
+function diagnoseColumnStructure() {
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName('202605_福岡プラント出勤簿');
+  const ss = files.hasNext()
+    ? SpreadsheetApp.openById(files.next().getId())
+    : SpreadsheetApp.openById(MASTER_SS_ID);
+
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ'];
+  const sheet = ss.getSheets().find(s => !SKIP.includes(s.getName()));
+  if (!sheet) return 'ERROR: 個人シートなし';
+
+  const lastCol = sheet.getLastColumn();
+  const lines = [];
+  lines.push('=== ' + ss.getName() + ' > ' + sheet.getName() + ' ===');
+  lines.push('最終列: ' + lastCol + ' (' + columnToLetter(lastCol) + ')');
+  lines.push('');
+
+  // 各列の「非表示」「数式/値」を全列スキャン
+  lines.push('--- 全列マップ（Row4の数式/値 + 非表示フラグ）---');
+  for (let c = 1; c <= lastCol; c++) {
+    const letter = columnToLetter(c);
+    const hidden = sheet.isColumnHiddenByUser(c);
+    const cell = sheet.getRange(4, c);
+    const formula = cell.getFormula();
+    const value = cell.getValue();
+    const hasFormula = formula !== '';
+    const hasValue = value !== '' && value !== null && value !== 0;
+    const dv = cell.getDataValidation();
+
+    let desc = letter + '(' + c + ')';
+    desc += hidden ? ' [非表示]' : ' [表示]';
+    desc += hasFormula ? ' 数式: ' + formula.substring(0, 80) :
+            hasValue   ? ' 値: ' + String(value).substring(0, 40) : ' (空)';
+    if (dv) desc += ' [DD]';
+    lines.push(desc);
+  }
+
+  // J/K/L/M/N/O/P/Q の詳細（Row3ヘッダーも含む）
+  lines.push('\n--- J〜Q列 Row3ヘッダー ---');
+  for (let c = 10; c <= 17; c++) {
+    const h3 = sheet.getRange(3, c).getValue();
+    lines.push(columnToLetter(c) + '3: ' + h3);
+  }
+
+  // Row3全体のヘッダーを出力（A〜AE）
+  lines.push('\n--- Row3ヘッダー全列（A〜AE） ---');
+  const row3 = sheet.getRange(3, 1, 1, Math.min(lastCol, 35)).getValues()[0];
+  row3.forEach((v, i) => {
+    if (v) lines.push(columnToLetter(i+1) + '3: ' + v);
+  });
+
+  // 非表示列のRow3ヘッダー（AF以降）
+  lines.push('\n--- Row3ヘッダー（AF以降、非表示列）---');
+  for (let c = 32; c <= lastCol; c++) {
+    const h3 = sheet.getRange(3, c).getValue();
+    const h4f = sheet.getRange(4, c).getFormula();
+    const h4v = sheet.getRange(4, c).getValue();
+    if (h3 || h4f || h4v) {
+      lines.push(columnToLetter(c) + '3: ' + h3 + ' | 4式: ' + (h4f || '(値:' + h4v + ')').substring(0,60));
+    }
+  }
+
+  // 非表示列の一覧
+  lines.push('\n--- 非表示列一覧 ---');
+  const hiddenCols = [];
+  for (let c = 1; c <= lastCol; c++) {
+    if (sheet.isColumnHiddenByUser(c)) hiddenCols.push(columnToLetter(c) + '(' + c + ')');
+  }
+  lines.push(hiddenCols.join(', ') || 'なし');
+
+  const content = lines.join('\n');
+  const ts = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMMdd_HHmmss');
+  const diagFolder = DriveApp.getFolderById('1SGCPerV8CCHT6CcDI8-E6G2JbbmNmsp8');
+  const f = diagFolder.createFile('col_structure_' + ts + '.txt', content, MimeType.PLAIN_TEXT);
+  return 'DIAG: ' + f.getId() + '\n\n' + content;
 }
 
 /**
