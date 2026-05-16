@@ -724,15 +724,25 @@ function formatAttendanceSheets(ss) {
     // A列（1列目）を非表示
     sheet.hideColumns(1, 1);
 
-    // AF(32)以降の列表示制御
-    // ・AF〜AJ(32〜36): 未使用または実績参照列 → 非表示
-    // ・AK(37)「例外出社」/ AL(38)「例外退社」: ユーザー入力列 → 表示（印刷範囲外なのでPDFには出ない）
-    // ・AM(39)以降: 未使用・計算補助列 → 非表示
+    // ── 印刷範囲外の列の表示制御 ──
+    // 印刷・PDF出力は A1:AE41（AE=col31）に固定なので、以下はすべて画面のみ表示。
+    //   AF(32)〜AH(34): 内部計算補助  → 非表示
+    //   AI(35): 「前月最終週の累計:」ラベル → 表示
+    //   AJ(36): 先月最終週累計入力欄          → 表示
+    //   AK(37): 例外出社入力欄                → 表示
+    //   AL(38): 例外退社入力欄                → 表示
+    //   AM(39)以降: 計算補助列                → 非表示
     const totalCols = sheet.getLastColumn();
     if (totalCols > 31) {
-      // AF〜AJ を非表示（5列）
-      if (totalCols >= 36) sheet.hideColumns(32, 5);
-      // AK・AL を表示（例外出社/退社）
+      // AF〜AH(32〜34) を非表示
+      if (totalCols >= 34) sheet.hideColumns(32, 3);
+      // AI(35)・AJ(36): 前月累計ラベル＋入力欄 を表示
+      if (totalCols >= 36) {
+        sheet.showColumns(35, 2);
+        sheet.setColumnWidth(35, 115); // AI: ラベル「前月最終週の累計:」
+        sheet.setColumnWidth(36, 55);  // AJ: 時間入力欄
+      }
+      // AK(37)・AL(38): 例外出社/退社 を表示
       if (totalCols >= 38) {
         sheet.showColumns(37, 2);
         sheet.setColumnWidth(37, 42);
@@ -2058,6 +2068,74 @@ function columnToLetter(col) {
 }
 
 /**
+ * AJ列（前月最終週累計入力欄）の整備と BH数式修正を一括実施
+ *
+ * 1. AI2 ラベル「前月最終週の累計:」を設定
+ * 2. AJ2:AJ34 の旧数式（弁当参照）をクリア → AJ2 を純粋な入力欄に
+ * 3. AJ2 に時間フォーマット（[h]:mm）を設定
+ * 4. AK2 の「社長印」をクリア
+ * 5. BH4:BH34（週累計計算）の '実績'!$AH$3 → $AJ$2 に修正
+ *    → 社員ごとに個人シートで前月累計を管理できるようになる
+ * 6. 列表示: AF-AH非表示 / AI-AL表示 / AM+非表示
+ */
+function fixAJ2Layout() {
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ','現場マスタ'];
+  const targets = [SpreadsheetApp.openById(MASTER_SS_ID)];
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const f = folder.getFilesByName('202605_福岡プラント出勤簿');
+  if (f.hasNext()) targets.push(SpreadsheetApp.openById(f.next().getId()));
+
+  const results = [];
+  targets.forEach(ss => {
+    ss.getSheets().filter(s => !SKIP.includes(s.getName())).forEach(sheet => {
+      const lastCol = sheet.getLastColumn();
+
+      // ── 1. AI2 ラベル ──
+      sheet.getRange(2, 35)
+        .setValue('前月最終週の累計:')
+        .setHorizontalAlignment('right')
+        .setFontSize(8).setFontColor('#1F3864');
+
+      // ── 2. AJ2:AJ34 の旧数式をクリア ──
+      sheet.getRange(2, 36, 33, 1).clearContent();
+
+      // ── 3. AJ2 に時間フォーマット（数値で入力された場合に hh:mm 表示） ──
+      sheet.getRange(2, 36).setNumberFormat('[h]:mm');
+
+      // ── 4. AK2 社長印をクリア ──
+      sheet.getRange(2, 37).clearContent();
+
+      // ── 5. BH4:BH34（col60）の '実績'!$AH$3 → $AJ$2 に修正 ──
+      const bhSample = sheet.getRange(4, 60).getFormula();
+      if (bhSample && bhSample.includes("'実績'!$AH$3")) {
+        const newBH = bhSample.replace(/'実績'!\$AH\$3/g, '$AJ$2');
+        sheet.getRange(4, 60, 31, 1).setFormula(newBH);
+      }
+
+      // ── 6. 列表示制御 ──
+      if (lastCol > 31) {
+        if (lastCol >= 34) sheet.hideColumns(32, 3);   // AF-AH: 非表示
+        if (lastCol >= 36) {
+          sheet.showColumns(35, 2);                    // AI-AJ: 表示
+          sheet.setColumnWidth(35, 115);               // AI: ラベル幅
+          sheet.setColumnWidth(36, 55);                // AJ: 入力欄幅
+        }
+        if (lastCol >= 38) {
+          sheet.showColumns(37, 2);                    // AK-AL: 表示
+          sheet.setColumnWidth(37, 42);
+          sheet.setColumnWidth(38, 42);
+        }
+        if (lastCol >= 39) sheet.hideColumns(39, lastCol - 38); // AM+: 非表示
+      }
+
+      results.push('[修正] ' + ss.getName() + ' > ' + sheet.getName());
+    });
+    SpreadsheetApp.flush();
+  });
+  return '✅ AJ2整備 + BH数式修正完了\n' + results.join('\n');
+}
+
+/**
  * C37「出勤日数」のフォントを縮小してセル内に収める（全個人シート）
  */
 function fixC37Font() {
@@ -2078,14 +2156,18 @@ function fixC37Font() {
   return '✅ C37フォント縮小完了（' + count + 'シート）';
 }
 
-// 月別SS新規作成時にRow2の氏名を設定（X2=「氏名：」右揃え、AB2=氏名）
+// 月別SS新規作成時にRow2の氏名・前月累計ラベルを設定
 function applyRow2Names(ss) {
-  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ'];
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ','現場マスタ'];
   ss.getSheets().filter(s => !SKIP.includes(s.getName())).forEach(sheet => {
     const sheetName = sheet.getName();
     sheet.getRange(2, 24).setValue('氏名：').setHorizontalAlignment('right'); // X2
-    sheet.getRange(2, 28).setValue(sheetName); // AB2（結合セル先頭）
-    sheet.getRange(2, 37).setValue('社長印'); // 社長印
+    sheet.getRange(2, 28).setValue(sheetName); // AB2
+    // AI2: 前月最終週の累計ラベル（AJ2 が入力欄）
+    sheet.getRange(2, 35).setValue('前月最終週の累計:')
+      .setHorizontalAlignment('right').setFontSize(8).setFontColor('#1F3864');
+    // AK2: 社長印は廃止（印刷範囲外・不要）
+    sheet.getRange(2, 37).clearContent();
     Logger.log(sheetName + ': Row2設定完了');
   });
 }
