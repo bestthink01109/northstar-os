@@ -131,44 +131,43 @@ function processQueue() {
 
 /**
  * 4. トリガー設定（初回1回だけ実行）
- * - processQueue: 毎分
- * - runMonthlySetup: 毎月1日 6:00（前月繰越の自動設定 + LINE通知）
+ * ┌──────────────────────────────────────────────────────┐
+ * │ 毎分           processQueue    LINE→キュー処理       │
+ * │ 毎月  1日 6:00 runMonthlyDay1  日付設定・新社員確認  │
+ * │ 毎月 10日 6:00 runMonthlyDay10 前月繰越AJ2自動入力   │
+ * └──────────────────────────────────────────────────────┘
  */
 function setupTrigger() {
-  // 既存トリガーを削除
   ScriptApp.getProjectTriggers().forEach(t => {
-    if (['processQueue', 'runMonthlySetup'].includes(t.getHandlerFunction())) {
-      ScriptApp.deleteTrigger(t);
-    }
+    if (['processQueue','runMonthlySetup','runMonthlyDay1','runMonthlyDay10']
+        .includes(t.getHandlerFunction())) ScriptApp.deleteTrigger(t);
   });
-  // 毎分: LINE→キュー処理
   ScriptApp.newTrigger('processQueue').timeBased().everyMinutes(1).create();
-  // 毎月10日 6:00: 前月繰越自動設定（前月実績確認後のタイミング）
-  ScriptApp.newTrigger('runMonthlySetup').timeBased().onMonthDay(10).atHour(6).create();
-  Logger.log('トリガー設定完了（毎分processQueue + 毎月10日6時runMonthlySetup）');
+  ScriptApp.newTrigger('runMonthlyDay1').timeBased().onMonthDay(1).atHour(6).create();
+  ScriptApp.newTrigger('runMonthlyDay10').timeBased().onMonthDay(10).atHour(6).create();
+  Logger.log('トリガー設定完了（毎分 / 毎月1日6時 / 毎月10日6時）');
 }
 
 /**
- * 毎月10日 6:00 に自動実行される月初セットアップ
- * ① 設定!C2 に当月1日をセット（集計WSのD列・出勤簿WSのD2/G2が連動）
- * ② 前月繰越(AJ2)を自動入力
- * ③ 結果を社長LINEに通知
+ * 毎月1日 6:00 ── 日付設定 + 新社員チェック
+ * ① 設定!C2 に当月1日をセット（集計WS・出勤簿WSのD2/G2が連動）
+ * ② 社員マスタ vs 個人シートを比較し、新社員がいれば社長LINEに通知
  */
-function runMonthlySetup() {
-  const now = new Date();
+function runMonthlyDay1() {
+  const now  = new Date();
   const ym   = Utilities.formatDate(now, 'Asia/Tokyo', 'yyyyMM');
   const year = ym.substring(0, 4);
   const mon  = ym.substring(4, 6);
-  const ssName      = ym + '_福岡プラント出勤簿';
-  const firstDateStr = year + '-' + mon + '-01'; // 設定C2 用
+  const ssName       = ym + '_福岡プラント出勤簿';
+  const firstDateStr = year + '-' + mon + '-01';
 
   const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
   const files  = folder.getFilesByName(ssName);
 
   if (!files.hasNext()) {
     notifySkipToLine(
-      '📅 月初セットアップ(' + ym + '): SS がまだ作成されていません。\n' +
-      '最初のLINEメッセージが届き次第、自動で作成・日付設定・前月繰越が設定されます。',
+      '📅 月初(' + ym + '): SS がまだ未作成です。\n' +
+      '最初のLINEメッセージ受信時に自動作成・日付設定されます。',
       '月初確認'
     );
     return;
@@ -176,21 +175,63 @@ function runMonthlySetup() {
 
   const currentSS = SpreadsheetApp.openById(files.next().getId());
 
-  // ① 設定!C2 を当月1日にセット（すでに正しくても念のため毎回）
+  // ① 設定!C2 を当月1日にセット
   updateSettingDate(currentSS, firstDateStr);
 
-  // ② 前月繰越(AJ2)を自動入力
-  const carryoverResult = setupCarryover(currentSS.getId());
-  const isOk = carryoverResult.startsWith('✅');
+  // ② 社員マスタ vs 個人シートを比較して新社員を検出
+  const masterSS  = SpreadsheetApp.openById(MASTER_SS_ID);
+  const staffList = getStaffList(masterSS);
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ','現場マスタ'];
+  const existingSheets = currentSS.getSheets()
+    .filter(s => !SKIP.includes(s.getName())).map(s => s.getName());
+
+  const newStaff = staffList.filter(s => !existingSheets.includes(s.fullName));
+
+  let msg = '📅 月初セットアップ完了（' + ym + '）\n' +
+            '✅ 設定!C2 → ' + year + '/' + mon + '/1 に設定';
+
+  if (newStaff.length > 0) {
+    msg += '\n\n⚠ 新しい社員が社員マスタに登録されています:\n' +
+           newStaff.map(s => '  ・' + s.fullName).join('\n') + '\n\n' +
+           '実績WSへの行追加・個人シート作成を行ってください。';
+    notifySkipToLine(msg, '月初セットアップ・新社員あり');
+  } else {
+    msg += '\n✅ 社員マスタに変更なし';
+    notifySkipToLine(msg, '月初セットアップ完了');
+  }
+  Logger.log('runMonthlyDay1: ' + msg);
+}
+
+/**
+ * 毎月10日 6:00 ── 前月繰越(AJ2)自動入力
+ * 前月実績を確認・確定してから繰越時間を計算・AJ2に設定する
+ */
+function runMonthlyDay10() {
+  const now = new Date();
+  const ym  = Utilities.formatDate(now, 'Asia/Tokyo', 'yyyyMM');
+  const ssName = ym + '_福岡プラント出勤簿';
+
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files  = folder.getFilesByName(ssName);
+
+  if (!files.hasNext()) {
+    notifySkipToLine('📅 前月繰越(' + ym + '): SS が見つかりません。', '前月繰越エラー');
+    return;
+  }
+
+  const currentSS = SpreadsheetApp.openById(files.next().getId());
+  const result    = setupCarryover(currentSS.getId());
+  const isOk      = result.startsWith('✅');
 
   notifySkipToLine(
-    '📅 月初セットアップ完了（' + ym + '）\n' +
-    '✅ 設定!C2 → ' + year + '/' + mon + '/1 に設定\n\n' +
-    carryoverResult,
-    isOk ? '月初セットアップ完了' : '月初セットアップ（要確認）'
+    '📅 前月繰越設定（' + ym + '）\n' + result,
+    isOk ? '前月繰越 自動設定完了' : '前月繰越 手動入力が必要'
   );
-  Logger.log('runMonthlySetup: 設定C2設定済み + ' + carryoverResult);
+  Logger.log('runMonthlyDay10: ' + result);
 }
+
+// 旧名の後方互換（古いトリガーが残っていた場合に備えて空関数として保持）
+function runMonthlySetup() { runMonthlyDay1(); }
 
 /**
  * 5. 一括入力マスターへの書き込み（核心処理）
