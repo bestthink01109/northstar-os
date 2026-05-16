@@ -149,36 +149,47 @@ function setupTrigger() {
 }
 
 /**
- * 毎月1日 6:00 に自動実行される月初セットアップ
- * 今月の月別SSを検索し、前月繰越(AJ2)を自動入力して社長LINEに通知する
+ * 毎月10日 6:00 に自動実行される月初セットアップ
+ * ① 設定!C2 に当月1日をセット（集計WSのD列・出勤簿WSのD2/G2が連動）
+ * ② 前月繰越(AJ2)を自動入力
+ * ③ 結果を社長LINEに通知
  */
 function runMonthlySetup() {
   const now = new Date();
-  const ym = Utilities.formatDate(now, 'Asia/Tokyo', 'yyyyMM');
-  const ssName = ym + '_福岡プラント出勤簿';
+  const ym   = Utilities.formatDate(now, 'Asia/Tokyo', 'yyyyMM');
+  const year = ym.substring(0, 4);
+  const mon  = ym.substring(4, 6);
+  const ssName      = ym + '_福岡プラント出勤簿';
+  const firstDateStr = year + '-' + mon + '-01'; // 設定C2 用
 
   const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
-  const files = folder.getFilesByName(ssName);
+  const files  = folder.getFilesByName(ssName);
 
   if (!files.hasNext()) {
-    // 今月のSSがまだない場合はLINE通知のみ
     notifySkipToLine(
-      '📅 月初セットアップ: ' + ssName + ' がまだ作成されていません。\n' +
-      '最初のLINEメッセージが届き次第、自動で作成・前月繰越が設定されます。',
+      '📅 月初セットアップ(' + ym + '): SS がまだ作成されていません。\n' +
+      '最初のLINEメッセージが届き次第、自動で作成・日付設定・前月繰越が設定されます。',
       '月初確認'
     );
     return;
   }
 
   const currentSS = SpreadsheetApp.openById(files.next().getId());
-  const result = setupCarryover(currentSS.getId());
-  const isOk = result.startsWith('✅');
+
+  // ① 設定!C2 を当月1日にセット（すでに正しくても念のため毎回）
+  updateSettingDate(currentSS, firstDateStr);
+
+  // ② 前月繰越(AJ2)を自動入力
+  const carryoverResult = setupCarryover(currentSS.getId());
+  const isOk = carryoverResult.startsWith('✅');
 
   notifySkipToLine(
-    '📅 月初セットアップ完了\n' + result,
-    isOk ? '前月繰越 自動設定完了' : '前月繰越 手動入力が必要'
+    '📅 月初セットアップ完了（' + ym + '）\n' +
+    '✅ 設定!C2 → ' + year + '/' + mon + '/1 に設定\n\n' +
+    carryoverResult,
+    isOk ? '月初セットアップ完了' : '月初セットアップ（要確認）'
   );
-  Logger.log('runMonthlySetup: ' + result);
+  Logger.log('runMonthlySetup: 設定C2設定済み + ' + carryoverResult);
 }
 
 /**
