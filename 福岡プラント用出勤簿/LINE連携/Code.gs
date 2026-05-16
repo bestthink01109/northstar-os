@@ -1363,6 +1363,161 @@ function hideJissekiExtraColumns() {
 }
 
 /**
+ * 新社員をシステムに追加する
+ * MASTER SS + 今月の月別SS の両方に対して以下を自動実行:
+ *   1. 社員マスタ に追加
+ *   2. 実績シート に4行ブロック追加（出勤状態/現場名/残業/弁当）
+ *   3. 個人シートを既存シートからコピーして作成
+ *      - D列（出勤状態）・F列（現場名）の実績参照行を新社員用に修正
+ *      - AB2=氏名 / AI2=前月累計ラベル 等を設定
+ *   4. 社長LINEに完了通知
+ *
+ * @param {string} lastName  - 苗字（例: "山田"）
+ * @param {string} fullName  - フルネーム（例: "山田　太郎"）
+ */
+function addEmployee(lastName, fullName) {
+  if (!lastName || !fullName) return 'ERROR: 苗字とフルネームを指定してください';
+
+  const results = [];
+
+  // MASTER SS + 今月SS の両方に適用
+  const targets = [SpreadsheetApp.openById(MASTER_SS_ID)];
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const ym = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMM');
+  const monthlyFiles = folder.getFilesByName(ym + '_福岡プラント出勤簿');
+  if (monthlyFiles.hasNext()) targets.push(SpreadsheetApp.openById(monthlyFiles.next().getId()));
+
+  targets.forEach(ss => {
+    const ssLabel = ss.getId() === MASTER_SS_ID ? 'MASTER' : ym;
+    const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ','現場マスタ'];
+
+    // ─ 1. 社員マスタ ─
+    const staffSheet = ss.getSheetByName('社員マスター') || ss.getSheetByName('社員マスタ');
+    if (staffSheet) {
+      const lastRow = staffSheet.getLastRow();
+      const names = staffSheet.getRange(1, 1, lastRow, 3).getValues().flat().map(String);
+      if (!names.includes(fullName)) {
+        staffSheet.appendRow(['', lastName, fullName]); // A=空, B=苗字, C=フルネーム
+        results.push('[' + ssLabel + '] 社員マスタに追加');
+      }
+    }
+
+    // ─ 2. 実績シート 4行ブロック追加 ─
+    const jisseki = ss.getSheetByName('実績') || ss.getSheetByName('一括入力マスター');
+    if (!jisseki) { results.push('[' + ssLabel + '] ERROR: 実績シートなし'); return; }
+
+    const jData = jisseki.getDataRange().getValues();
+    // 最後の社員名の行を見つける
+    let lastNameRow = 2;
+    for (let r = 2; r < jData.length; r++) {
+      if (String(jData[r][0]).trim()) lastNameRow = r + 1; // 1-based
+    }
+    // 既に追加済みかチェック
+    const alreadyInJisseki = jData.some(r => String(r[0]).trim() === fullName);
+    if (alreadyInJisseki) {
+      results.push('[' + ssLabel + '] 実績シートに既存（スキップ）');
+    } else {
+      const insertAfter = lastNameRow + 3; // 最終社員の弁当行の後
+      const newStatusRow = insertAfter + 1;   // 新社員の出勤状態行（1-based）
+
+      jisseki.insertRowsAfter(insertAfter, 4);
+      jisseki.getRange(newStatusRow,     1).setValue(fullName);
+      jisseki.getRange(newStatusRow,     2).setValue('出勤状態');
+      jisseki.getRange(newStatusRow + 1, 2).setValue('現場名');
+      jisseki.getRange(newStatusRow + 2, 2).setValue('残業');
+      jisseki.getRange(newStatusRow + 3, 2).setValue('弁当');
+      results.push('[' + ssLabel + '] 実績シートに追加（row ' + newStatusRow + '〜' + (newStatusRow + 3) + '）');
+    }
+
+    // ─ 3. 個人シート作成 ─
+    if (ss.getSheetByName(fullName)) {
+      results.push('[' + ssLabel + '] 個人シートに既存（スキップ）');
+      SpreadsheetApp.flush();
+      return;
+    }
+
+    const templates = ss.getSheets().filter(s => !SKIP.includes(s.getName()));
+    if (templates.length === 0) { results.push('[' + ssLabel + '] ERROR: テンプレートシートなし'); return; }
+
+    const newSheet = templates[0].copyTo(ss);
+    newSheet.setName(fullName);
+
+    // 実績シートの新社員のステータス行番号を再取得（行挿入後に変わる）
+    const jDataAfter = jisseki.getDataRange().getValues();
+    let actualStatusRow = 0;
+    for (let r = 2; r < jDataAfter.length; r++) {
+      if (String(jDataAfter[r][0]).trim() === fullName) { actualStatusRow = r + 1; break; }
+    }
+    const actualSiteRow = actualStatusRow + 1;
+
+    // D列（出勤状態）: 実績の出勤状態行を $absolute 行で参照
+    // → 行方向に移動しても行番号が固定され、列だけがCからD,E...とシフトする
+    const dF = "=IF('実績'!C$" + actualStatusRow + "=\"\",\"\",IF('実績'!C$" + actualStatusRow +
+               "=\"休出(出張)\",\"休出\",IF('実績'!C$" + actualStatusRow +
+               "=\"振出(出張)\",\"振出\",'実績'!C$" + actualStatusRow + ")))";
+    newSheet.getRange(4, 4, 31, 1).setFormula(dF);
+
+    // F列（現場名）: 実績の現場名行を $absolute 行で参照
+    const fF = "=IF('実績'!C$" + actualSiteRow + "=\"\",\"\",'実績'!C$" + actualSiteRow + ")";
+    newSheet.getRange(4, 6, 31, 1).setFormula(fF);
+
+    // AA列・AJ2 をクリア
+    newSheet.getRange(4, 27, 31, 1).clearContent();
+    newSheet.getRange(2, 36).clearContent();
+
+    // Row2 の氏名・ラベル設定
+    newSheet.getRange(2, 28).setValue(fullName); // AB2
+    newSheet.getRange(2, 35).setValue('前月最終週の累計:').setHorizontalAlignment('right')
+      .setFontSize(8).setFontColor('#1F3864');   // AI2
+    newSheet.getRange(2, 37).clearContent();       // AK2 社長印クリア
+
+    results.push('[' + ssLabel + '] 個人シート作成完了（実績行=' + actualStatusRow + '）');
+    SpreadsheetApp.flush();
+  });
+
+  const msg = '👤 新社員を追加しました\n氏名: ' + fullName + '（' + lastName + '）\n\n' + results.join('\n');
+  notifyLine(msg);
+  return msg;
+}
+
+/**
+ * テスト用に追加した社員を削除する（確認後に使用）
+ */
+function removeTestEmployee() {
+  const testName = 'テスト　太郎';
+  const targets = [SpreadsheetApp.openById(MASTER_SS_ID)];
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const ym = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMM');
+  const f = folder.getFilesByName(ym + '_福岡プラント出勤簿');
+  if (f.hasNext()) targets.push(SpreadsheetApp.openById(f.next().getId()));
+
+  targets.forEach(ss => {
+    // 社員マスタから削除
+    const staffSheet = ss.getSheetByName('社員マスター') || ss.getSheetByName('社員マスタ');
+    if (staffSheet) {
+      const data = staffSheet.getDataRange().getValues();
+      for (let i = data.length - 1; i >= 0; i--) {
+        if (data[i].map(String).includes(testName)) staffSheet.deleteRow(i + 1);
+      }
+    }
+    // 実績から4行削除
+    const jisseki = ss.getSheetByName('実績') || ss.getSheetByName('一括入力マスター');
+    if (jisseki) {
+      const d = jisseki.getDataRange().getValues();
+      for (let i = d.length - 1; i >= 0; i--) {
+        if (String(d[i][0]).trim() === testName) {
+          jisseki.deleteRows(i + 1, 4); break;
+        }
+      }
+    }
+    // 個人シートを削除
+    const sheet = ss.getSheetByName(testName);
+    if (sheet) ss.deleteSheet(sheet);
+  });
+  return '✅ テスト社員を削除しました';
+}
+
+/**
  * 設定シートの出勤状態リスト（F列）を新仕様に更新
  * + 実績シートの出勤状態セルのドロップダウンも更新
  * 新仕様: 出勤/休日/休出/振出/振休/有給/欠勤/特別
