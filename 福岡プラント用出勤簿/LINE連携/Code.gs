@@ -130,14 +130,55 @@ function processQueue() {
 }
 
 /**
- * 4. 毎分トリガー設定（初回1回だけ実行）
+ * 4. トリガー設定（初回1回だけ実行）
+ * - processQueue: 毎分
+ * - runMonthlySetup: 毎月1日 6:00（前月繰越の自動設定 + LINE通知）
  */
 function setupTrigger() {
-  ScriptApp.getProjectTriggers().forEach(trigger => {
-    if (trigger.getHandlerFunction() === 'processQueue') ScriptApp.deleteTrigger(trigger);
+  // 既存トリガーを削除
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (['processQueue', 'runMonthlySetup'].includes(t.getHandlerFunction())) {
+      ScriptApp.deleteTrigger(t);
+    }
   });
+  // 毎分: LINE→キュー処理
   ScriptApp.newTrigger('processQueue').timeBased().everyMinutes(1).create();
-  Logger.log('毎分トリガーを設定しました。');
+  // 毎月1日 6:00: 前月繰越自動設定
+  ScriptApp.newTrigger('runMonthlySetup').timeBased().onMonthDay(1).atHour(6).create();
+  Logger.log('トリガー設定完了（毎分processQueue + 毎月1日6時runMonthlySetup）');
+}
+
+/**
+ * 毎月1日 6:00 に自動実行される月初セットアップ
+ * 今月の月別SSを検索し、前月繰越(AJ2)を自動入力して社長LINEに通知する
+ */
+function runMonthlySetup() {
+  const now = new Date();
+  const ym = Utilities.formatDate(now, 'Asia/Tokyo', 'yyyyMM');
+  const ssName = ym + '_福岡プラント出勤簿';
+
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName(ssName);
+
+  if (!files.hasNext()) {
+    // 今月のSSがまだない場合はLINE通知のみ
+    notifySkipToLine(
+      '📅 月初セットアップ: ' + ssName + ' がまだ作成されていません。\n' +
+      '最初のLINEメッセージが届き次第、自動で作成・前月繰越が設定されます。',
+      '月初確認'
+    );
+    return;
+  }
+
+  const currentSS = SpreadsheetApp.openById(files.next().getId());
+  const result = setupCarryover(currentSS.getId());
+  const isOk = result.startsWith('✅');
+
+  notifySkipToLine(
+    '📅 月初セットアップ完了\n' + result,
+    isOk ? '前月繰越 自動設定完了' : '前月繰越 手動入力が必要'
+  );
+  Logger.log('runMonthlySetup: ' + result);
 }
 
 /**
@@ -308,6 +349,20 @@ function ensureMonthlySSExists(aiResult) {
 
   formatAttendanceSheets(newSS);
   applyRow2Names(newSS);
+
+  // ── 新月SS作成時に前月繰越を自動設定 ──
+  try {
+    const carryoverResult = setupCarryover(newSS.getId());
+    const isOk = carryoverResult.startsWith('✅');
+    const msg = isOk
+      ? '📅 ' + fileName + ' を新規作成しました。\n先月繰越(AJ2)を自動設定しました。\n\n' + carryoverResult
+      : '📅 ' + fileName + ' を新規作成しました。\n⚠ 先月繰越(AJ2)の手動入力が必要です。\n\n' + carryoverResult;
+    notifySkipToLine(msg, '新月SS作成・繰越設定');
+    Logger.log(carryoverResult);
+  } catch (e) {
+    Logger.log('前月繰越自動設定エラー: ' + e.message);
+  }
+
   Logger.log('月別SSを新規作成しました: ' + fileName);
   return newSS;
 }
