@@ -136,17 +136,17 @@ function writeToMasterSheet(ss, aiResult, staffList) {
   }
   Logger.log('書込先シート: ' + inputSheet.getName());
 
-  // 現場名ゆらぎ辞書を設定シートから読み込む
-  const locationMappings = getLocationMappings(ss);
-  Logger.log('ゆらぎ辞書件数: ' + Object.keys(locationMappings).length);
+  // 現場マスタ（ゆらぎ辞書 + 種別）を読み込む
+  const siteData = getSiteMasterData(ss);
+  Logger.log('現場マスタ: マッピング' + Object.keys(siteData.mappings).length + '件, 種別' + Object.keys(siteData.types).length + '件');
 
   const data = inputSheet.getDataRange().getValues();
 
   aiResult.forEach(entry => {
-    // 現場名のゆらぎを正規化
-    if (entry.場所 && locationMappings[entry.場所.trim()]) {
-      Logger.log('現場名正規化: ' + entry.場所 + ' → ' + locationMappings[entry.場所.trim()]);
-      entry.場所 = locationMappings[entry.場所.trim()];
+    // 現場名をゆらぎ辞書で正規化
+    if (entry.場所 && siteData.mappings[entry.場所.trim()]) {
+      Logger.log('現場名正規化: ' + entry.場所 + ' → ' + siteData.mappings[entry.場所.trim()]);
+      entry.場所 = siteData.mappings[entry.場所.trim()];
     }
     // 氏名の解決（苗字→フルネーム）
     const matchedStaff = staffList.find(s => entry.氏名 === s.lastName || entry.氏名 === s.fullName);
@@ -185,6 +185,21 @@ function writeToMasterSheet(ss, aiResult, staffList) {
     inputSheet.getRange(nameRow + 1, colNum).setValue(entry.場所 || '');
     inputSheet.getRange(nameRow + 2, colNum).setValue(entry.残業 !== undefined ? entry.残業 : '');
     inputSheet.getRange(nameRow + 3, colNum).setValue(entry.弁当 || '');
+
+    // 個人シートのAA列（現場区分: 工場/現場/出張）に種別を書き込む
+    // GeminiがAA="出張"を返した場合はそれを優先、なければマスタから種別を取得
+    const siteType = (entry.AA && entry.AA.trim())
+      ? entry.AA.trim()
+      : (entry.場所 ? siteData.types[entry.場所] || '' : '');
+    // 未知の現場名はマスタに自動追加
+    if (entry.場所 && !siteData.types[entry.場所]) {
+      addSiteToMaster(ss, entry.場所, entry.場所);
+    }
+    const personalSheet = ss.getSheetByName(fullName);
+    if (personalSheet && siteType) {
+      personalSheet.getRange(day + 3, 27).setValue(siteType); // AA列=27、row=day+3
+      Logger.log('AA列書込: ' + fullName + ' ' + dateStr + ' → ' + siteType);
+    }
 
     Logger.log('[書込完了] ' + fullName + ' ' + dateStr + ' → 行' + nameRow + ' 列' + colNum);
   });
@@ -312,21 +327,22 @@ function parseAttendanceWithGemini(messageText, staffList) {
     + '【掟】\n'
     + '1. 社員リストにある苗字が「本文に明記」されている場合のみ抽出せよ。存在しない名前は無視せよ。\n'
     + '2. 日付は YYYY-MM-DD 形式。年がなければ 2026年 とする。\n'
-    + '3. 状態は「出勤」「休日」「休出」「振出」「振休」「有給」「欠勤」「特別」のいずれか。場所や「定時」があれば「出勤」、出張も「出勤」（AA列で「出張」を別途管理）、「休み」「公休」は「休日」、休日出勤は「休出」とせよ。\n'
-    + '4. 場所は「新興プラント」「AGC工場」など、地名や社名を含めて正確に抽出せよ。出張の場合は行先地名を場所に入れよ。\n'
+    + '3. 状態は「出勤」「休日」「休出」「振出」「振休」「有給」「欠勤」「特別」のいずれか。場所や「定時」があれば「出勤」、出張も「出勤」とせよ（AA列で区別）。「休み」「公休」は「休日」、休日出勤は「休出」とせよ。\n'
+    + '4. 場所は「新興プラント」「AGC工場」など地名・社名を正確に抽出せよ。出張の場合は行先地名（例：名古屋）を場所に入れよ。\n'
     + '5. 残業は数値のみ（2.5など）。「なし」「定時」や未記載は 0 とせよ。\n'
-    + '6. 弁当は「弁当」「べんとう」の文字があれば "〇"、なければ空文字 "" とせよ。\n'
-    + '7. 勤怠に関係ない挨拶やスタンプ、雑談は完全に無視（スルー）し、[] を返せ。\n'
-    + '8. 「全員弁当」などの表現は、そのメッセージに含まれる全員に適用せよ。\n\n'
+    + '6. 弁当は「弁当」「べんとう」があれば "〇"、なければ "" とせよ。\n'
+    + '7. 勤怠に無関係な挨拶・雑談は完全無視し、[] を返せ。\n'
+    + '8. 「全員弁当」等は、そのメッセージの全員に適用せよ。\n'
+    + '9. AA区分は「工場」「現場」「出張」のいずれか。メッセージに「出張」が含まれる場合は「出張」、それ以外は場所がある場合でも "" とせよ（GAS側でマスタ参照して自動設定）。\n\n'
     + '【社員リスト】\n' + staffNames + '\n\n'
-    + '【見本1】5月7日 新興プラント 土本 中嶋 残業2\n回答：[{"氏名":"土本","日付":"2026-05-07","状態":"出勤","場所":"新興プラント","残業":2,"弁当":""},{"氏名":"中嶋","日付":"2026-05-07","状態":"出勤","場所":"新興プラント","残業":2,"弁当":""}]\n\n'
-    + '【見本2】5月9日 AGC工場 土本 國松（部外者） 残業なし\n回答：[{"氏名":"土本","日付":"2026-05-09","状態":"出勤","場所":"AGC工場","残業":0,"弁当":""}]\n\n'
-    + '【見本3】5月10日 名古屋出張 石村 弁当\n回答：[{"氏名":"石村","日付":"2026-05-10","状態":"出勤","場所":"名古屋","残業":0,"弁当":"〇"}]\n\n'
+    + '【見本1】5月7日 新興プラント 土本 中嶋 残業2\n回答：[{"氏名":"土本","日付":"2026-05-07","状態":"出勤","場所":"新興プラント","残業":2,"弁当":"","AA":""},{"氏名":"中嶋","日付":"2026-05-07","状態":"出勤","場所":"新興プラント","残業":2,"弁当":"","AA":""}]\n\n'
+    + '【見本2】5月9日 AGC工場 土本 國松（部外者） 残業なし\n回答：[{"氏名":"土本","日付":"2026-05-09","状態":"出勤","場所":"AGC工場","残業":0,"弁当":"","AA":""}]\n\n'
+    + '【見本3】5月10日 名古屋出張 石村 弁当\n回答：[{"氏名":"石村","日付":"2026-05-10","状態":"出勤","場所":"名古屋","残業":0,"弁当":"〇","AA":"出張"}]\n\n'
     + '【見本4】お疲れ様です。テストです。\n回答：[]\n\n'
-    + '【見本5】5/9と10 新興プラント 土本 残業各2\n回答：[{"氏名":"土本","日付":"2026-05-09","状態":"出勤","場所":"新興プラント","残業":2,"弁当":""},{"氏名":"土本","日付":"2026-05-10","状態":"出勤","場所":"新興プラント","残業":2,"弁当":""}]\n\n'
-    + '【見本6】5/11 土本 出勤 残業1\n回答：[{"氏名":"土本","日付":"2026-05-11","状態":"出勤","場所":"","残業":1,"弁当":""}]\n\n'
-    + '【見本7】5/11(月) 現場：AGC 名前：土本 残業：3\n回答：[{"氏名":"土本","日付":"2026-05-11","状態":"出勤","場所":"AGC","残業":3,"弁当":""}]\n\n'
-    + '【見本8】5/12 AGC 土本 石村 全員弁当 全員残業2\n回答：[{"氏名":"土本","日付":"2026-05-12","状態":"出勤","場所":"AGC","残業":2,"弁当":"〇"},{"氏名":"石村","日付":"2026-05-12","状態":"出勤","場所":"AGC","残業":2,"弁当":"〇"}]\n\n'
+    + '【見本5】5/9と10 新興プラント 土本 残業各2\n回答：[{"氏名":"土本","日付":"2026-05-09","状態":"出勤","場所":"新興プラント","残業":2,"弁当":"","AA":""},{"氏名":"土本","日付":"2026-05-10","状態":"出勤","場所":"新興プラント","残業":2,"弁当":"","AA":""}]\n\n'
+    + '【見本6】5/11 土本 出勤 残業1\n回答：[{"氏名":"土本","日付":"2026-05-11","状態":"出勤","場所":"","残業":1,"弁当":"","AA":""}]\n\n'
+    + '【見本7】5/11(月) 現場：AGC 名前：土本 残業：3\n回答：[{"氏名":"土本","日付":"2026-05-11","状態":"出勤","場所":"AGC","残業":3,"弁当":"","AA":""}]\n\n'
+    + '【見本8】5/12 AGC 土本 石村 全員弁当 全員残業2\n回答：[{"氏名":"土本","日付":"2026-05-12","状態":"出勤","場所":"AGC","残業":2,"弁当":"〇","AA":""},{"氏名":"石村","日付":"2026-05-12","状態":"出勤","場所":"AGC","残業":2,"弁当":"〇","AA":""}]\n\n'
     + '【対象メッセージ】\n今日：' + today + '\n入力：' + messageText;
 
   const payload = {
@@ -849,37 +865,21 @@ function checkPDFFile() {
   }
 }
 
-/**
- * 現場名ゆらぎ辞書：設定シートのマッピングテーブルを読み込む
- * 返値: { "ゆらぎ": "正規名", ... }
- */
-function getLocationMappings(ss) {
-  const sheet = ss.getSheetByName('設定');
-  if (!sheet) return {};
-  const mappings = {};
-  for (let row = 16; row <= 60; row++) {
-    const fuzzy = String(sheet.getRange(row, 2).getValue()).trim();
-    if (!fuzzy) break;
-    const canonical = String(sheet.getRange(row, 3).getValue()).trim();
-    if (canonical) mappings[fuzzy] = canonical;
-  }
-  return mappings;
-}
+// ============================================================
+// 現場マスタ管理（ゆらぎ正規化 + 種別判定 + 自動追加）
+// ============================================================
+
+/** 初期登録する既知の現場データ */
+const SITE_MASTER_DEFAULTS = [
+  { name: 'AGC工場',      type: '工場', variations: ['AGC', '旭硝子', 'AGC旭硝子'] },
+  { name: '新興プラント', type: '現場', variations: ['新興', '新興産業'] },
+];
 
 /**
- * 現場名ゆらぎ辞書の初期設定
- * MASTER SSおよび202605 SSの設定シートRow14以降にマッピングテーブルを書き込む
- * 社長がゆらぎを追加する際はB列:ゆらぎ / C列:正規名 の行を追加するだけでOK
+ * 現場マスタシートを MASTER SS + 202605 SS に作成・初期登録
+ * 「現場マスタ」シート: A=正規名 / B=種別 / C=ゆらぎ(カンマ区切り) / D=登録日 / E=備考
  */
-function setupFuzzyLocationDict() {
-  const DEFAULT_MAPPINGS = [
-    ['AGC',       'AGC工場'],
-    ['旭硝子',    'AGC工場'],
-    ['AGC旭硝子', 'AGC工場'],
-    ['新興',      '新興プラント'],
-    ['新興産業',  '新興プラント'],
-  ];
-
+function setupSiteMaster() {
   const targets = [SpreadsheetApp.openById(MASTER_SS_ID)];
   const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
   const files = folder.getFilesByName('202605_福岡プラント出勤簿');
@@ -887,40 +887,90 @@ function setupFuzzyLocationDict() {
 
   const results = [];
   targets.forEach(ss => {
-    const sheet = ss.getSheetByName('設定');
-    if (!sheet) { results.push(ss.getName() + ': 設定シートなし'); return; }
+    let sheet = ss.getSheetByName('現場マスタ');
+    if (!sheet) sheet = ss.insertSheet('現場マスタ');
 
     // ヘッダー
-    const hdr = sheet.getRange(14, 2);
-    hdr.setValue('■ 現場名ゆらぎ辞書').setFontWeight('bold')
-      .setBackground('#2E75B6').setFontColor('#FFFFFF');
-    sheet.getRange(15, 2).setValue('ゆらぎ（入力値）').setFontWeight('bold').setBackground('#DEEAF1');
-    sheet.getRange(15, 3).setValue('正規名（統一後）').setFontWeight('bold').setBackground('#DEEAF1');
+    const hdrs = ['正規名', '種別(工場/現場/出張)', 'ゆらぎ（カンマ区切り）', '登録日', '備考'];
+    sheet.getRange(1, 1, 1, hdrs.length).setValues([hdrs])
+      .setFontWeight('bold').setBackground('#2E75B6').setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 150); sheet.setColumnWidth(2, 120);
+    sheet.setColumnWidth(3, 200); sheet.setColumnWidth(4, 100); sheet.setColumnWidth(5, 200);
 
-    // マッピング行（既存があれば上書きしない → 16行目から空を見つけるまで確認）
-    const existingCount = (() => {
-      let c = 0;
-      for (let r = 16; r <= 60; r++) {
-        if (sheet.getRange(r, 2).getValue()) c++; else break;
+    // 既存エントリ取得
+    const lastRow = sheet.getLastRow();
+    const existingNames = lastRow > 1
+      ? sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat().map(String).filter(Boolean)
+      : [];
+
+    const today = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
+    let added = 0;
+    SITE_MASTER_DEFAULTS.forEach(site => {
+      if (!existingNames.includes(site.name)) {
+        sheet.appendRow([site.name, site.type, site.variations.join(','), today, '']);
+        added++;
       }
-      return c;
-    })();
-
-    if (existingCount === 0) {
-      DEFAULT_MAPPINGS.forEach((m, i) => {
-        sheet.getRange(16 + i, 2).setValue(m[0]);
-        sheet.getRange(16 + i, 3).setValue(m[1]);
-      });
-      results.push(ss.getName() + ': ' + DEFAULT_MAPPINGS.length + '件のデフォルトマッピングを追加');
-    } else {
-      results.push(ss.getName() + ': 既存マッピング' + existingCount + '件あり（上書きスキップ）');
-    }
+    });
+    results.push(ss.getName() + ': ' + added + '件追加（既存' + existingNames.length + '件）');
   });
-
   SpreadsheetApp.flush();
-  const summary = results.join('\n');
-  Logger.log(summary);
-  return '✅ ゆらぎ辞書セットアップ完了\n' + summary;
+  return '✅ 現場マスタ設定完了\n' + results.join('\n');
+}
+
+/**
+ * 現場マスタシートからマッピング・種別データを取得
+ * @returns { mappings: {ゆらぎ→正規名}, types: {正規名→種別} }
+ */
+function getSiteMasterData(ss) {
+  const sheet = ss.getSheetByName('現場マスタ');
+  if (!sheet || sheet.getLastRow() < 2) return { mappings: {}, types: {} };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues();
+  const mappings = {}, types = {};
+  data.forEach(row => {
+    const name = String(row[0]).trim();
+    const type = String(row[1]).trim();
+    const variStr = String(row[2]).trim();
+    if (!name) return;
+    mappings[name] = name;
+    types[name] = type;
+    variStr.split(',').forEach(v => {
+      const vt = v.trim();
+      if (vt) { mappings[vt] = name; types[vt] = type; }
+    });
+  });
+  return { mappings, types };
+}
+
+/**
+ * 未知の現場名を現場マスタに自動追加して社長LINEに通知
+ */
+function addSiteToMaster(ss, siteName, sourceMsg) {
+  const sheet = ss.getSheetByName('現場マスタ');
+  if (!sheet) return;
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    const existing = sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat().map(String);
+    if (existing.includes(siteName)) return;
+  }
+  const today = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
+  sheet.appendRow([siteName, '不明', '', today, 'LINE自動追加: ' + String(sourceMsg).substring(0, 40)]);
+  notifySkipToLine(
+    '📍 新しい現場名を検出しました\n現場名: ' + siteName + '\n\n現場マスタに「不明」で追加しました。\n種別（工場/現場/出張）を設定してください。',
+    '新規現場名自動追加'
+  );
+  Logger.log('現場マスタ自動追加: ' + siteName);
+}
+
+// 後方互換（設定シートのゆらぎ辞書は現場マスタに移行済み）
+function getLocationMappings(ss) {
+  return getSiteMasterData(ss).mappings;
+}
+
+// 後方互換（現場マスタに統合済み）
+function setupFuzzyLocationDict() {
+  return setupSiteMaster();
 }
 
 /**
@@ -996,6 +1046,71 @@ function fixPhase2Formulas(ssId) {
 }
 
 /**
+ * P4残業参照を OFFSET方式で修正（最重要バグ修正）
+ *
+ * 問題: P4の数式が全員「'実績'!C5」(土本固定)を参照していた
+ *       → 日付が変わっても列がズレず、坂井など他の社員の残業が反映されない
+ *
+ * 修正: OFFSET('実績'!$C$1, $AH$2-1, ROW()-4) を使用
+ *   ・$AH$2 = 各社員の残業行番号（MATCH式で動的取得）
+ *   ・ROW()-4 = 日付に対応するカラムオフセット（day1=0, day2=1...）
+ *
+ * 元Excel参照行（確認済み）:
+ *   土本=5, 中嶋=9, 坂井=13, 石村=17, 鳳ノ城=21, 福山=25, 内村=29
+ */
+function fixOvertimeFormulas() {
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ','現場マスタ'];
+
+  // AH2ヘルパー: 実績シートから自社員の残業行を動的取得（AB2=シート名=社員フルネーム）
+  const AH2_FORMULA = "=IFERROR(MATCH(AB2,'実績'!$A:$A,0)+2,5)";
+
+  // 新P4数式: OFFSETで社員別・日別に正しい実績セルを参照
+  const NEW_P4 = '=IF($AL4<>"",$AL4,IF(OR($D4="出勤",$D4="休出",$D4="振出"),IF(WEEKDAY($B4,2)=6,15/24,17/24)+IFERROR(IF(ISNUMBER(OFFSET(\'実績\'!$C$1,$AH$2-1,ROW()-4)),OFFSET(\'実績\'!$C$1,$AH$2-1,ROW()-4)/24,0),0),IF(IF($J4<>"",$J4,$L4)<>"",IF($J4<>"",$J4,$L4)+IF(WEEKDAY($B4,2)=6,7/24,9/24)+IFERROR(IF(ISNUMBER(OFFSET(\'実績\'!$C$1,$AH$2-1,ROW()-4)),OFFSET(\'実績\'!$C$1,$AH$2-1,ROW()-4)/24,0),0),"")))'
+
+  const targets = [SpreadsheetApp.openById(MASTER_SS_ID)];
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName('202605_福岡プラント出勤簿');
+  if (files.hasNext()) targets.push(SpreadsheetApp.openById(files.next().getId()));
+
+  const results = [];
+  targets.forEach(ss => {
+    ss.getSheets().filter(s => !SKIP.includes(s.getName())).forEach(sheet => {
+      // AH2 = MATCH式で社員の残業行番号を取得するヘルパーセル
+      sheet.getRange(2, 34).setFormula(AH2_FORMULA);  // AH2 = col 34
+
+      // P4:P34 に新しいOFFSET数式を適用（GASが行番号を自動調整）
+      sheet.getRange(4, 16, 31, 1).setFormula(NEW_P4);
+
+      results.push('[修正] ' + ss.getName() + ' > ' + sheet.getName());
+    });
+    SpreadsheetApp.flush();
+  });
+
+  const msg = '✅ P4残業OFFSET修正完了\n' + results.join('\n');
+  Logger.log(msg);
+  return msg;
+}
+
+/**
+ * AH2とP4の修正状態を全社員シートで検証
+ */
+function verifyOvertimeFix() {
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ','現場マスタ'];
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName('202605_福岡プラント出勤簿');
+  const ss = files.hasNext() ? SpreadsheetApp.openById(files.next().getId()) : SpreadsheetApp.openById(MASTER_SS_ID);
+
+  const lines = ['=== ' + ss.getName() + ' AH2・P4検証 ==='];
+  ss.getSheets().filter(s => !SKIP.includes(s.getName())).forEach(sheet => {
+    const ah2Val = sheet.getRange(2, 34).getValue();   // AH2実際の値
+    const ah2Formula = sheet.getRange(2, 34).getFormula(); // AH2数式
+    const p4Formula = sheet.getRange(4, 16).getFormula().substring(0, 60); // P4数式冒頭
+    lines.push(sheet.getName() + ' | AH2値=' + ah2Val + ' | AH2式=' + (ah2Formula ? 'MATCH式あり' : 'なし') + ' | P4先頭=' + p4Formula);
+  });
+  return lines.join('\n');
+}
+
+/**
  * J4・P4の完全な数式をテキストで返す（修正前の確認用）
  */
 function getTimeCellFormulas() {
@@ -1037,9 +1152,11 @@ function fixColumnFormulasAndVisibility() {
      .replace(/,\$D\d+="出張"/g, '');                // 末尾に出張が残った場合の除去
 
   const newJ4 = fixDCol(origJ4);
-  const newP4 = fixDCol(origP4);
+  // P4はOFFSET方式に置き換え（fixOvertimeFormulasと同じ）
+  const NEW_P4_OFFSET = '=IF($AL4<>"",$AL4,IF(OR($D4="出勤",$D4="休出",$D4="振出"),IF(WEEKDAY($B4,2)=6,15/24,17/24)+IFERROR(IF(ISNUMBER(OFFSET(\'実績\'!$C$1,$AH$2-1,ROW()-4)),OFFSET(\'実績\'!$C$1,$AH$2-1,ROW()-4)/24,0),0),IF(IF($J4<>"",$J4,$L4)<>"",IF($J4<>"",$J4,$L4)+IF(WEEKDAY($B4,2)=6,7/24,9/24)+IFERROR(IF(ISNUMBER(OFFSET(\'実績\'!$C$1,$AH$2-1,ROW()-4)),OFFSET(\'実績\'!$C$1,$AH$2-1,ROW()-4)/24,0),0),"")))'
+  const AH2_FORMULA = "=IFERROR(MATCH(AB2,'実績'!$A:$A,0)+2,5)";
 
-  const lines = ['J4 修正前: ' + origJ4, 'J4 修正後: ' + newJ4, '', 'P4 修正前: ' + origP4, 'P4 修正後: ' + newP4];
+  const lines = ['J4 修正後: ' + newJ4, 'P4: OFFSET方式（社員別・日別）に変更'];
 
   // 適用対象SS（202605 + MASTER）
   const targets = [refSS];
@@ -1052,8 +1169,9 @@ function fixColumnFormulasAndVisibility() {
 
       // J4:J34 に修正数式を適用（GASが行番号を自動調整）
       sheet.getRange(4, 10, 31, 1).setFormula(newJ4);
-      // P4:P34 に修正数式を適用
-      sheet.getRange(4, 16, 31, 1).setFormula(newP4);
+      // P4:P34 にOFFSET方式の数式を適用
+      sheet.getRange(2, 34).setFormula(AH2_FORMULA); // AH2ヘルパー
+      sheet.getRange(4, 16, 31, 1).setFormula(NEW_P4_OFFSET);
 
       // ── 列表示/非表示の修正 ──
       // まず AF(32)以降を全非表示
