@@ -335,9 +335,9 @@ function parseAttendanceWithGemini(messageText, staffList) {
     + '8. 「全員弁当」等は、そのメッセージの全員に適用せよ。\n'
     + '9. AA区分は「工場」「現場」「出張」のいずれか。メッセージに「出張」が含まれる場合は「出張」、それ以外は場所がある場合でも "" とせよ（GAS側でマスタ参照して自動設定）。\n\n'
     + '【社員リスト】\n' + staffNames + '\n\n'
-    + '【見本1】5月7日 新興プラント 土本 中嶋 残業2\n回答：[{"氏名":"土本","日付":"2026-05-07","状態":"出勤","場所":"新興プラント","残業":2,"弁当":"","AA":""},{"氏名":"中嶋","日付":"2026-05-07","状態":"出勤","場所":"新興プラント","残業":2,"弁当":"","AA":""}]\n\n'
-    + '【見本2】5月9日 AGC工場 土本 國松（部外者） 残業なし\n回答：[{"氏名":"土本","日付":"2026-05-09","状態":"出勤","場所":"AGC工場","残業":0,"弁当":"","AA":""}]\n\n'
-    + '【見本3】5月10日 名古屋出張 石村 弁当\n回答：[{"氏名":"石村","日付":"2026-05-10","状態":"出勤","場所":"名古屋","残業":0,"弁当":"〇","AA":"出張"}]\n\n'
+    + '【見本1】5月7日 新興 土本 中嶋 残業2\n回答：[{"氏名":"土本","日付":"2026-05-07","状態":"出勤","場所":"新興","残業":2,"弁当":"","AA":""},{"氏名":"中嶋","日付":"2026-05-07","状態":"出勤","場所":"新興","残業":2,"弁当":"","AA":""}]\n\n'
+    + '【見本2】5月9日 AGC 土本 國松（部外者） 残業なし\n回答：[{"氏名":"土本","日付":"2026-05-09","状態":"出勤","場所":"AGC","残業":0,"弁当":"","AA":""}]\n\n'
+    + '【見本3】5月10日 千葉出張 石村 弁当\n回答：[{"氏名":"石村","日付":"2026-05-10","状態":"出勤","場所":"千葉AGC","残業":0,"弁当":"〇","AA":"出張"}]\n\n'
     + '【見本4】お疲れ様です。テストです。\n回答：[]\n\n'
     + '【見本5】5/9と10 新興プラント 土本 残業各2\n回答：[{"氏名":"土本","日付":"2026-05-09","状態":"出勤","場所":"新興プラント","残業":2,"弁当":"","AA":""},{"氏名":"土本","日付":"2026-05-10","状態":"出勤","場所":"新興プラント","残業":2,"弁当":"","AA":""}]\n\n'
     + '【見本6】5/11 土本 出勤 残業1\n回答：[{"氏名":"土本","日付":"2026-05-11","状態":"出勤","場所":"","残業":1,"弁当":"","AA":""}]\n\n'
@@ -869,11 +869,82 @@ function checkPDFFile() {
 // 現場マスタ管理（ゆらぎ正規化 + 種別判定 + 自動追加）
 // ============================================================
 
-/** 初期登録する既知の現場データ */
+/**
+ * 既知の現場マスタデータ（正式名称・種別・ゆらぎ）
+ *
+ * 種別:
+ *   出張 … 拠点から離れて移動が必要な現場（AA列="出張"）
+ *   現場 … 通常の現場・工場作業（AA列="現場"）
+ *   工場 … 自社・協力会社工場での作業（AA列="工場"）
+ */
 const SITE_MASTER_DEFAULTS = [
-  { name: 'AGC工場',      type: '工場', variations: ['AGC', '旭硝子', 'AGC旭硝子'] },
-  { name: '新興プラント', type: '現場', variations: ['新興', '新興産業'] },
+  {
+    name: '千葉AGC新興プラント',
+    type: '出張',
+    variations: ['AGC', '千葉AGC', 'AGC新興', '千葉新興', 'AGC新興プラント', '旭硝子', 'AGC旭硝子', '千葉']
+  },
+  {
+    name: '新興プラント大牟田工場',
+    type: '現場',
+    variations: ['新興', '新興プラント', '新興産業', '大牟田', '大牟田工場', '新興大牟田']
+  },
+  {
+    name: '三井化学',
+    type: '現場',
+    variations: ['三井', '三井化学工場', 'Mitsui']
+  },
 ];
+
+/**
+ * 現場マスタを正式データで再構築（既存エントリを全削除して登録し直す）
+ * 正式名称・種別が確定したタイミングで1回だけ実行する
+ */
+function rebuildSiteMaster() {
+  const targets = [SpreadsheetApp.openById(MASTER_SS_ID)];
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName('202605_福岡プラント出勤簿');
+  if (files.hasNext()) targets.push(SpreadsheetApp.openById(files.next().getId()));
+
+  const results = [];
+  const today = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
+
+  targets.forEach(ss => {
+    let sheet = ss.getSheetByName('現場マスタ');
+    if (!sheet) sheet = ss.insertSheet('現場マスタ');
+
+    // 全データを一旦クリア（ヘッダー含む）
+    sheet.clearContents();
+
+    // ヘッダー再設定
+    const hdrs = ['正規名', '種別(工場/現場/出張)', 'ゆらぎ（カンマ区切り）', '登録日', '備考'];
+    sheet.getRange(1, 1, 1, hdrs.length).setValues([hdrs])
+      .setFontWeight('bold').setBackground('#2E75B6').setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 180); sheet.setColumnWidth(2, 120);
+    sheet.setColumnWidth(3, 250); sheet.setColumnWidth(4, 100); sheet.setColumnWidth(5, 200);
+
+    // 正式データ登録
+    const rows = SITE_MASTER_DEFAULTS.map(site => [
+      site.name, site.type, site.variations.join(','), today, ''
+    ]);
+    if (rows.length > 0) {
+      sheet.getRange(2, 1, rows.length, 5).setValues(rows);
+    }
+
+    // 交互背景色
+    SITE_MASTER_DEFAULTS.forEach((_, i) => {
+      if (i % 2 === 1) sheet.getRange(i + 2, 1, 1, 5).setBackground('#F8F9FA');
+    });
+
+    results.push(ss.getName() + ': ' + rows.length + '件登録');
+  });
+
+  SpreadsheetApp.flush();
+  return '✅ 現場マスタ再構築完了\n' + results.join('\n') +
+    '\n\n登録内容:\n' + SITE_MASTER_DEFAULTS.map(s =>
+      '  [' + s.type + '] ' + s.name + ' ← ' + s.variations.join('/')
+    ).join('\n');
+}
 
 /**
  * 現場マスタシートを MASTER SS + 202605 SS に作成・初期登録
