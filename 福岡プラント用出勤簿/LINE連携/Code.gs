@@ -641,6 +641,8 @@ function formatAttendanceSheets(ss) {
     sheet.getRange(38, 1, 1, lastCol).setFontSize(10); // 日数値行
     sheet.getRange(40, 1, 1, lastCol).setFontSize(9);  // 見出し行
     sheet.getRange(41, 1, 1, lastCol).setFontSize(9);  // 時間値行
+    // C37「出勤日数」: 列幅42pxに4文字が収まらないため縮小
+    sheet.getRange(37, 3).setFontSize(7).setWrap(false);
     // 条件付き書式：土曜=淡ブルー、日曜=淡コーラル
     const dataRange = sheet.getRange('A4:AE34');
     const existingRules = sheet.getConditionalFormatRules();
@@ -2053,6 +2055,27 @@ function columnToLetter(col) {
     col = Math.floor(col / 26);
   }
   return result;
+}
+
+/**
+ * C37「出勤日数」のフォントを縮小してセル内に収める（全個人シート）
+ */
+function fixC37Font() {
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ','現場マスタ'];
+  const targets = [SpreadsheetApp.openById(MASTER_SS_ID)];
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const f = folder.getFilesByName('202605_福岡プラント出勤簿');
+  if (f.hasNext()) targets.push(SpreadsheetApp.openById(f.next().getId()));
+
+  let count = 0;
+  targets.forEach(ss => {
+    ss.getSheets().filter(s => !SKIP.includes(s.getName())).forEach(sheet => {
+      sheet.getRange(37, 3).setFontSize(7).setWrap(false); // C37: 出勤日数
+      count++;
+    });
+    SpreadsheetApp.flush();
+  });
+  return '✅ C37フォント縮小完了（' + count + 'シート）';
 }
 
 // 月別SS新規作成時にRow2の氏名を設定（X2=「氏名：」右揃え、AB2=氏名）
