@@ -165,11 +165,7 @@ function runMonthlyDay1() {
   const files  = folder.getFilesByName(ssName);
 
   if (!files.hasNext()) {
-    notifySkipToLine(
-      '📅 月初(' + ym + '): SS がまだ未作成です。\n' +
-      '最初のLINEメッセージ受信時に自動作成・日付設定されます。',
-      '月初確認'
-    );
+    notifyLine('📅 月初(' + ym + '): SS がまだ未作成です。\n最初のLINEメッセージ受信時に自動作成・日付設定されます。');
     return;
   }
 
@@ -194,10 +190,10 @@ function runMonthlyDay1() {
     msg += '\n\n⚠ 新しい社員が社員マスタに登録されています:\n' +
            newStaff.map(s => '  ・' + s.fullName).join('\n') + '\n\n' +
            '実績WSへの行追加・個人シート作成を行ってください。';
-    notifySkipToLine(msg, '月初セットアップ・新社員あり');
+    notifyLine(msg);
   } else {
     msg += '\n✅ 社員マスタに変更なし';
-    notifySkipToLine(msg, '月初セットアップ完了');
+    notifyLine(msg);
   }
   Logger.log('runMonthlyDay1: ' + msg);
 }
@@ -215,7 +211,7 @@ function runMonthlyDay10() {
   const files  = folder.getFilesByName(ssName);
 
   if (!files.hasNext()) {
-    notifySkipToLine('📅 前月繰越(' + ym + '): SS が見つかりません。', '前月繰越エラー');
+    notifyLine('📅 前月繰越(' + ym + '): SS が見つかりません。');
     return;
   }
 
@@ -223,10 +219,7 @@ function runMonthlyDay10() {
   const result    = setupCarryover(currentSS.getId());
   const isOk      = result.startsWith('✅');
 
-  notifySkipToLine(
-    '📅 前月繰越設定（' + ym + '）\n' + result,
-    isOk ? '前月繰越 自動設定完了' : '前月繰越 手動入力が必要'
-  );
+  notifyLine('📅 前月繰越設定（' + ym + '）\n' + result);
   Logger.log('runMonthlyDay10: ' + result);
 }
 
@@ -409,7 +402,7 @@ function ensureMonthlySSExists(aiResult) {
     const msg = isOk
       ? '📅 ' + fileName + ' を新規作成しました。\n先月繰越(AJ2)を自動設定しました。\n\n' + carryoverResult
       : '📅 ' + fileName + ' を新規作成しました。\n⚠ 先月繰越(AJ2)の手動入力が必要です。\n\n' + carryoverResult;
-    notifySkipToLine(msg, '新月SS作成・繰越設定');
+    notifyLine(msg);
     Logger.log(carryoverResult);
   } catch (e) {
     Logger.log('前月繰越自動設定エラー: ' + e.message);
@@ -884,7 +877,34 @@ function setBossLineUserId() {
 }
 
 /**
- * スキップ発生時に社長のLINEに通知
+ * 汎用LINE通知（月次自動化・新社員通知など、テキストをそのまま送る）
+ */
+function notifyLine(text) {
+  const token  = PropertiesService.getScriptProperties().getProperty('LINE_CHANNEL_TOKEN');
+  const bossId = PropertiesService.getScriptProperties().getProperty('BOSS_LINE_USER_ID');
+  if (!token || !bossId) {
+    Logger.log('LINE通知スキップ: トークン未設定');
+    return;
+  }
+  try {
+    UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'post',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      payload: JSON.stringify({ to: bossId, messages: [{ type: 'text', text: text }] }),
+      muteHttpExceptions: true
+    });
+  } catch(e) {
+    Logger.log('LINE通知エラー: ' + e.message);
+  }
+}
+
+// LINE通知テスト
+function testLineNotify() {
+  notifyLine('✅ 福岡プラント勤怠システム\nLINE通知テスト送信成功です！');
+}
+
+/**
+ * キュースキップ時に社長のLINEに通知（スキップ専用・ヘッダー固定）
  */
 function notifySkipToLine(message, reason) {
   const token = PropertiesService.getScriptProperties().getProperty('LINE_CHANNEL_TOKEN');
@@ -1213,10 +1233,7 @@ function addSiteToMaster(ss, siteName, sourceMsg) {
   }
   const today = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
   sheet.appendRow([siteName, '不明', '', today, 'LINE自動追加: ' + String(sourceMsg).substring(0, 40)]);
-  notifySkipToLine(
-    '📍 新しい現場名を検出しました\n現場名: ' + siteName + '\n\n現場マスタに「不明」で追加しました。\n種別（工場/現場/出張）を設定してください。',
-    '新規現場名自動追加'
-  );
+  notifyLine('📍 新しい現場名を検出しました\n現場名: ' + siteName + '\n\n現場マスタに「不明」で追加しました。\n種別（工場/現場/出張）を設定してください。');
   Logger.log('現場マスタ自動追加: ' + siteName);
 }
 
