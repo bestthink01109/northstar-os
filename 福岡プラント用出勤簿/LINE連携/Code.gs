@@ -1039,6 +1039,80 @@ function getLocationMappings(ss) { return getSiteMasterData(ss).mappings; }
 function setupFuzzyLocationDict() { return setupSiteMaster(); }
 
 /**
+ * 実績シートの現場名を現場マスタで照合し、全個人シートのAA列を遡及修正
+ * 対象: 指定SS（省略時は202605 SS）の全日程・全社員
+ * 現場マスタに登録された正規名・ゆらぎから種別を引いてAA列に書き込む
+ */
+function backfillAA(ssId) {
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName('202605_福岡プラント出勤簿');
+  const ss = ssId
+    ? SpreadsheetApp.openById(ssId)
+    : (files.hasNext() ? SpreadsheetApp.openById(files.next().getId()) : null);
+  if (!ss) return 'ERROR: SSが見つかりません';
+
+  const siteData = getSiteMasterData(ss);
+  const jisseki = ss.getSheetByName('実績') || ss.getSheetByName('一括入力マスター');
+  if (!jisseki) return 'ERROR: 実績シートなし';
+
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ','現場マスタ'];
+  const staffSheets = ss.getSheets().filter(s => !SKIP.includes(s.getName()));
+  const jissekiData = jisseki.getDataRange().getValues();
+
+  // 実績シートから社員ごとの「現場名行番号（1-based）」を取得
+  const staffRows = {};
+  for (let r = 2; r < jissekiData.length; r++) {
+    const name = String(jissekiData[r][0]).trim();
+    if (name) {
+      staffRows[name] = r + 1; // 出勤状態行（1-based）
+    }
+  }
+
+  const log = [];
+  let totalUpdated = 0;
+
+  staffSheets.forEach(sheet => {
+    const sheetName = sheet.getName();
+    const nameRow = staffRows[sheetName];
+    if (!nameRow) { log.push(sheetName + ': 実績に対応行なし'); return; }
+
+    const siteNameRow = nameRow + 1; // 現場名行
+    const lastCol = jisseki.getLastColumn();
+    if (lastCol < 3) return;
+
+    // 実績シートのC列〜（1日〜31日）の現場名を読む
+    const siteNames = jisseki.getRange(siteNameRow, 3, 1, lastCol - 2).getValues()[0];
+    let updated = 0;
+
+    siteNames.forEach((rawSite, dayIdx) => {
+      const siteName = String(rawSite).trim();
+      if (!siteName) return;
+
+      // 正規化して種別を取得
+      const canonicalName = siteData.mappings[siteName] || siteName;
+      const siteType = siteData.types[canonicalName] || siteData.types[siteName] || '';
+      if (!siteType) return;
+
+      const day = dayIdx + 1;          // 1〜31
+      const sheetRow = day + 3;        // 個人シートの行（day1=row4）
+      const currentAA = String(sheet.getRange(sheetRow, 27).getValue()).trim();
+
+      if (currentAA !== siteType) {
+        sheet.getRange(sheetRow, 27).setValue(siteType);
+        log.push(sheetName + ' ' + day + '日: AA ' + (currentAA || '空') + ' → ' + siteType + ' (' + canonicalName + ')');
+        updated++;
+      }
+    });
+
+    totalUpdated += updated;
+    if (updated === 0) log.push(sheetName + ': 変更なし');
+  });
+
+  SpreadsheetApp.flush();
+  return '✅ AA列バックフィル完了\n更新合計: ' + totalUpdated + 'セル\n\n' + log.join('\n');
+}
+
+/**
  * 設定シートの不要になったゆらぎ辞書（B14:C末尾）を削除してシートを整理
  */
 function cleanupSettingSheet() {
