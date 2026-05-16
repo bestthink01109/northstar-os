@@ -1308,6 +1308,62 @@ function bulkFillSite(lastName, siteOrAlias, ssId) {
 }
 
 /**
+ * 指定社員の指定日以降のデータをクリア
+ * 実績シート（出勤状態・現場名・残業・弁当）+ 個人シートAA列 をブランクに戻す
+ *
+ * @param {string} lastName  - 社員苗字（例: "坂井"）
+ * @param {number} fromDay   - クリア開始日（例: 16）
+ * @param {string} [ssId]    - 省略時は202605 SS
+ */
+function clearDays(lastName, fromDay, ssId) {
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName('202605_福岡プラント出勤簿');
+  const ss = ssId
+    ? SpreadsheetApp.openById(ssId)
+    : (files.hasNext() ? SpreadsheetApp.openById(files.next().getId()) : null);
+  if (!ss) return 'ERROR: SSが見つかりません';
+
+  // 社員フルネームを特定
+  const masterSS = SpreadsheetApp.openById(MASTER_SS_ID);
+  const staffList = getStaffList(masterSS);
+  const staff = staffList.find(s => s.lastName === lastName || s.fullName === lastName);
+  if (!staff) return 'ERROR: 社員 "' + lastName + '" が社員マスタに存在しません';
+  const fullName = staff.fullName;
+
+  // 実績シートで対象社員の行を特定
+  const jisseki = ss.getSheetByName('実績') || ss.getSheetByName('一括入力マスター');
+  if (!jisseki) return 'ERROR: 実績シートなし';
+
+  const jData = jisseki.getDataRange().getValues();
+  let nameRow = -1;
+  for (let r = 2; r < jData.length; r++) {
+    if (String(jData[r][0]).trim() === fullName) { nameRow = r + 1; break; }
+  }
+  if (nameRow === -1) return 'ERROR: 実績シートに "' + fullName + '" が見つかりません';
+
+  const fromCol = fromDay + 2;  // day→列番号（C=day1=col3）
+  const toCol   = 33;           // 31日=col33
+  const clearWidth = toCol - fromCol + 1;
+
+  if (clearWidth <= 0) return '対象なし（fromDay=' + fromDay + '）';
+
+  // 実績シート: 出勤状態/現場名/残業/弁当 の4行をクリア
+  jisseki.getRange(nameRow,     fromCol, 4, clearWidth).clearContent();
+
+  // 個人シート: AA列（col27）をクリア
+  const personalSheet = ss.getSheetByName(fullName);
+  if (personalSheet) {
+    const fromRow = fromDay + 3;  // day1=row4 → day16=row19
+    const toRow   = 34;           // day31=row34
+    const rowCount = toRow - fromRow + 1;
+    personalSheet.getRange(fromRow, 27, rowCount, 1).clearContent();
+  }
+
+  SpreadsheetApp.flush();
+  return '✅ ' + fullName + ' の ' + fromDay + '日〜31日 をクリアしました';
+}
+
+/**
  * backfillAA を拡張: F列（現場名）も出張先地名で上書きする
  * （過去データで F列が正規名になっている場合の修正）
  */
