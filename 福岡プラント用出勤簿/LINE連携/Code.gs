@@ -1546,6 +1546,61 @@ function fillMissingSites(lastName, siteOrAlias, ssId) {
 }
 
 /**
+ * AA列（個人シート）の旧数式を全削除してGAS管理値に一本化
+ * + J38/K38/L38のカウント式を正しい SUMPRODUCT 式に更新
+ *
+ * 旧AA式: =IF(OR('実績'!C3="休出(出張)",'実績'!C3="振出(出張)"),"出張","")
+ *   → 新システムでは実績に旧出張状態が入らないので常に""を返す不要式
+ *   → backfillAA でVALUEを書いた行は上書き済みだが、未処理行に残存
+ *
+ * 旧J38式: COUNTIFS($F$4:$F$34, J37) → F列=正式名称、J37=地名で不一致
+ * 新J38式: SUMPRODUCT + VLOOKUP でF列を地名に変換してから比較
+ */
+function fixAAAndRow38() {
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ','現場マスタ'];
+  const targets = [SpreadsheetApp.openById(MASTER_SS_ID)];
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const f = folder.getFilesByName('202605_福岡プラント出勤簿');
+  if (f.hasNext()) targets.push(SpreadsheetApp.openById(f.next().getId()));
+
+  // J38/K38/L38 の正しいカウント式:
+  //   SUMPRODUCT( (AA="出張" OR D="出張"), (VLOOKUP(F列, 現場マスタ, 4) = Jxx) )
+  //   → F列の正式名称をVLOOKUPで地名に変換し、集計行の地名と比較
+  const makeRow38Formula = (n) =>
+    '=IF(J' + (36+n) + '=""," ",SUMPRODUCT(' +
+    '(($AA$4:$AA$34="出張")+($D$4:$D$34="出張")>0)*' +
+    '(IFERROR(VLOOKUP($F$4:$F$34,現場マスタ!$A:$D,4,FALSE),$F$4:$F$34)=' +
+    'J' + (36+n) + ')))';
+  // n=1→J37比較(J38), n=2→K37比較(K38), n=3→L37比較(L38)
+  const j38 = '=IF(J37=""," ",SUMPRODUCT((($AA$4:$AA$34="出張")+($D$4:$D$34="出張")>0)*(IFERROR(VLOOKUP($F$4:$F$34,現場マスタ!$A:$D,4,FALSE),$F$4:$F$34)=J37)))';
+  const k38 = '=IF(K37=""," ",SUMPRODUCT((($AA$4:$AA$34="出張")+($D$4:$D$34="出張")>0)*(IFERROR(VLOOKUP($F$4:$F$34,現場マスタ!$A:$D,4,FALSE),$F$4:$F$34)=K37)))';
+  const l38 = '=IF(L37=""," ",SUMPRODUCT((($AA$4:$AA$34="出張")+($D$4:$D$34="出張")>0)*(IFERROR(VLOOKUP($F$4:$F$34,現場マスタ!$A:$D,4,FALSE),$F$4:$F$34)=L37)))';
+
+  const results = [];
+  targets.forEach(ss => {
+    ss.getSheets().filter(s => !SKIP.includes(s.getName())).forEach(sheet => {
+      // ── AA列（col27）Row4〜34 の数式セルだけクリア ──
+      // （値が書き込まれている日は getValue != "" で数式でも値でも同じなので
+      //   全セルをクリアしてから backfillAA で値を再セットする方が確実）
+      const aaRange = sheet.getRange(4, 27, 31, 1);
+      aaRange.clearContent(); // 数式も値も一旦クリア
+
+      // ── J38/K38/L38 のカウント式を修正 ──
+      sheet.getRange(38, 10).setFormula(j38); // J38
+      sheet.getRange(38, 11).setFormula(k38); // K38
+      sheet.getRange(38, 12).setFormula(l38); // L38
+
+      results.push('[修正] ' + ss.getName() + ' > ' + sheet.getName());
+    });
+    SpreadsheetApp.flush();
+
+    // AA列をクリアした後 backfillAA で正しい値を再セット
+    backfillAA(ss.getId());
+  });
+  return '✅ AA列クリア + J/K/L38カウント修正完了\n' + results.join('\n');
+}
+
+/**
  * 個人シートのJ37・K37・L37（出張先集計）を VLOOKUP(F列, 現場マスタ, 出張先名) に更新
  * F列が正式名称 → マスタのdest列で地名（千葉など）に変換して表示する
  */
