@@ -1266,6 +1266,34 @@ function backfillAA(ssId) {
 }
 
 /**
+ * 実績シートの AH列以降（前月累計エリア・不要）を非表示にする
+ * BH数式は個人シートの $AJ$2 を参照するように変更済みなので実績!AH3 は不要
+ */
+function hideJissekiExtraColumns() {
+  const targets = [SpreadsheetApp.openById(MASTER_SS_ID)];
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const f = folder.getFilesByName('202605_福岡プラント出勤簿');
+  if (f.hasNext()) targets.push(SpreadsheetApp.openById(f.next().getId()));
+
+  const results = [];
+  targets.forEach(ss => {
+    const sheet = ss.getSheetByName('実績') || ss.getSheetByName('一括入力マスター');
+    if (!sheet) { results.push(ss.getName() + ': 実績シートなし'); return; }
+
+    const lastCol = sheet.getLastColumn();
+    // 実績シートはC〜AG(3〜33)が1日〜31日。AH(34)以降は不要→非表示
+    if (lastCol >= 34) {
+      sheet.hideColumns(34, lastCol - 33);
+      results.push(ss.getName() + ': AH〜' + columnToLetter(lastCol) + '列を非表示');
+    } else {
+      results.push(ss.getName() + ': 非表示対象なし（最終列:' + lastCol + '）');
+    }
+  });
+  SpreadsheetApp.flush();
+  return '✅ 実績シート余剰列を非表示\n' + results.join('\n');
+}
+
+/**
  * 設定シートの出勤状態リスト（F列）を新仕様に更新
  * + 実績シートの出勤状態セルのドロップダウンも更新
  * 新仕様: 出勤/休日/休出/振出/振休/有給/欠勤/特別
