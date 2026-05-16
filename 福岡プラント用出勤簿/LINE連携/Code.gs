@@ -27,6 +27,8 @@ function onOpen() {
     .addItem('全員分PDFを出力', 'exportAllSheetsToPDF')
     .addSeparator()
     .addItem('【月初】先月繰越を自動入力（AJ2）', 'setupCarryover')
+    .addSeparator()
+    .addItem('【社員】新入社員を追加する', 'addEmployeeFromMenu')
     .addToUi();
 }
 
@@ -1478,6 +1480,41 @@ function addEmployee(lastName, fullName) {
   const msg = '👤 新社員を追加しました\n氏名: ' + fullName + '（' + lastName + '）\n\n' + results.join('\n');
   notifyLine(msg);
   return msg;
+}
+
+/**
+ * メニューから新入社員を追加する（ダイアログで名前を入力）
+ */
+function addEmployeeFromMenu() {
+  const ui = SpreadsheetApp.getUi();
+
+  const lastNameRes = ui.prompt(
+    '新入社員の追加',
+    '苗字を入力してください（例：山田）',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (lastNameRes.getSelectedButton() !== ui.Button.OK) return;
+  const lastName = lastNameRes.getResponseText().trim();
+  if (!lastName) { ui.alert('苗字が入力されていません。'); return; }
+
+  const fullNameRes = ui.prompt(
+    '新入社員の追加',
+    'フルネームを入力してください（例：山田　太郎）\n※姓と名の間は全角スペース',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (fullNameRes.getSelectedButton() !== ui.Button.OK) return;
+  const fullName = fullNameRes.getResponseText().trim();
+  if (!fullName) { ui.alert('フルネームが入力されていません。'); return; }
+
+  const confirm = ui.alert(
+    '確認',
+    '以下の社員を追加します。よろしいですか？\n\n苗字: ' + lastName + '\nフルネーム: ' + fullName,
+    ui.ButtonSet.YES_NO
+  );
+  if (confirm !== ui.Button.YES) return;
+
+  const result = addEmployee(lastName, fullName);
+  ui.alert('完了', result, ui.ButtonSet.OK);
 }
 
 /**
