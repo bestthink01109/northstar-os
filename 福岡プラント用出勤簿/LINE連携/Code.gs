@@ -1034,14 +1034,35 @@ function addSiteToMaster(ss, siteName, sourceMsg) {
   Logger.log('現場マスタ自動追加: ' + siteName);
 }
 
-// 後方互換（設定シートのゆらぎ辞書は現場マスタに移行済み）
-function getLocationMappings(ss) {
-  return getSiteMasterData(ss).mappings;
-}
+// 後方互換ラッパー（現場マスタに統合済み）
+function getLocationMappings(ss) { return getSiteMasterData(ss).mappings; }
+function setupFuzzyLocationDict() { return setupSiteMaster(); }
 
-// 後方互換（現場マスタに統合済み）
-function setupFuzzyLocationDict() {
-  return setupSiteMaster();
+/**
+ * 設定シートの不要になったゆらぎ辞書（B14:C末尾）を削除してシートを整理
+ */
+function cleanupSettingSheet() {
+  const targets = [SpreadsheetApp.openById(MASTER_SS_ID)];
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+  const files = folder.getFilesByName('202605_福岡プラント出勤簿');
+  if (files.hasNext()) targets.push(SpreadsheetApp.openById(files.next().getId()));
+
+  const results = [];
+  targets.forEach(ss => {
+    const sheet = ss.getSheetByName('設定');
+    if (!sheet) { results.push(ss.getName() + ': 設定シートなし'); return; }
+
+    // Row14以降（ゆらぎ辞書エリア）をクリア
+    const lastRow = sheet.getLastRow();
+    if (lastRow >= 14) {
+      sheet.getRange(14, 1, lastRow - 13, sheet.getLastColumn()).clearContent();
+      results.push(ss.getName() + ': Row14〜' + lastRow + ' をクリア');
+    } else {
+      results.push(ss.getName() + ': 削除対象なし');
+    }
+  });
+  SpreadsheetApp.flush();
+  return '✅ 設定シート整理完了\n' + results.join('\n');
 }
 
 /**
