@@ -25,6 +25,8 @@ function onOpen() {
     .addItem('社員名簿を更新', 'syncStaffList')
     .addItem('出勤簿を整形する', 'applyFormatToCurrentFile')
     .addItem('全員分PDFを出力', 'exportAllSheetsToPDF')
+    .addSeparator()
+    .addItem('【月初】先月繰越を自動入力（AJ2）', 'setupCarryover')
     .addToUi();
 }
 
@@ -2065,6 +2067,104 @@ function columnToLetter(col) {
     col = Math.floor(col / 26);
   }
   return result;
+}
+
+/**
+ * 先月SS から各社員の「最終週の所定内累計時間（BE列）」を読み取り、
+ * 今月SS の各個人シート AJ2 に自動入力する
+ *
+ * 目的: 週40時間ルールが月をまたぐ場合の正確な計算
+ *   例) 5月が水曜始まり → 4/28〜4/30 が同じ週に含まれる
+ *       4月側の所定内累計を AJ2 に入れることで、5月の BH 計算が
+ *       「その週の残り枠 = 40h - 先月分」を正しく把握できる
+ *
+ * @param {string} [targetSSId]  - 今月SS の ID（省略時は最新の月別SS を自動検索）
+ */
+function setupCarryover(targetSSId) {
+  const folder = DriveApp.getFolderById(MONTHLY_FOLDER_ID);
+
+  // ── 今月SS を取得 ──
+  let currentSS;
+  if (targetSSId) {
+    currentSS = SpreadsheetApp.openById(targetSSId);
+  } else {
+    // フォルダ内の月別SS を名前で取得（202605 をデフォルト）
+    const f = folder.getFilesByName('202605_福岡プラント出勤簿');
+    if (!f.hasNext()) return 'ERROR: 月別SSが見つかりません';
+    currentSS = SpreadsheetApp.openById(f.next().getId());
+  }
+
+  // ── 先月の YYYYMM を計算 ──
+  const ssName = currentSS.getName(); // 例: "202605_福岡プラント出勤簿"
+  const m = ssName.match(/^(\d{4})(\d{2})_/);
+  if (!m) return 'ERROR: SS名から年月を取得できません: ' + ssName;
+
+  const year = parseInt(m[1]);
+  const month = parseInt(m[2]);
+  const prevYear  = month === 1 ? year - 1 : year;
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevSSName = prevYear + String(prevMonth).padStart(2, '0') + '_福岡プラント出勤簿';
+
+  // ── 先月SS を検索 ──
+  const prevFiles = folder.getFilesByName(prevSSName);
+  if (!prevFiles.hasNext()) {
+    return '⚠ 先月SS「' + prevSSName + '」が見つかりません。\n' +
+           'AJ2 は手動で入力してください（単位: 時間/24。例: 7時間 → 0.2917）';
+  }
+  const prevSS = SpreadsheetApp.openById(prevFiles.next().getId());
+
+  // ── 各社員のシートで処理 ──
+  const SKIP = ['実績','設定','社員マスタ','集計','処理キュー','実績ログ','診断ログ','現場マスタ'];
+  const results = [];
+
+  currentSS.getSheets().filter(s => !SKIP.includes(s.getName())).forEach(curSheet => {
+    const name = curSheet.getName();
+    const prevSheet = prevSS.getSheetByName(name);
+
+    if (!prevSheet) {
+      results.push('⚠ ' + name + ': 先月SSにシートなし → AJ2 は空のまま');
+      return;
+    }
+
+    // 先月シートの BA列(53)=週開始日、BE列(57)=所定内時間 を読み込む（Row4〜34）
+    const baVals = prevSheet.getRange(4, 53, 31, 1).getValues().flat();
+    const beVals = prevSheet.getRange(4, 57, 31, 1).getValues().flat();
+
+    // 最終週（最大の BA 値）を特定
+    let maxBATime = 0;
+    baVals.forEach(ba => {
+      if (ba instanceof Date && ba.getTime() > maxBATime) maxBATime = ba.getTime();
+    });
+
+    if (maxBATime === 0) {
+      results.push(name + ': 先月データなし → AJ2 は空のまま');
+      curSheet.getRange(2, 36).clearContent();
+      return;
+    }
+
+    // 最終週の BE 合計を計算
+    let sumBE = 0;
+    baVals.forEach((ba, i) => {
+      if (ba instanceof Date && ba.getTime() === maxBATime) {
+        const be = beVals[i];
+        if (typeof be === 'number' && be > 0) sumBE += be;
+      }
+    });
+
+    // AJ2 に書き込む（BE は時間/24 の単位。[h]:mm 書式で表示される）
+    if (sumBE > 0) {
+      curSheet.getRange(2, 36).setValue(sumBE);
+      const h = Math.floor(sumBE * 24);
+      const mm = Math.round((sumBE * 24 - h) * 60);
+      results.push('✅ ' + name + ': 先月最終週累計 = ' + h + ':' + String(mm).padStart(2,'0') + ' → AJ2 に設定');
+    } else {
+      curSheet.getRange(2, 36).clearContent();
+      results.push(name + ': 先月最終週は0時間 → AJ2 は空のまま');
+    }
+  });
+
+  SpreadsheetApp.flush();
+  return '✅ 前月繰越設定完了\n先月SS: ' + prevSSName + '\n\n' + results.join('\n');
 }
 
 /**
