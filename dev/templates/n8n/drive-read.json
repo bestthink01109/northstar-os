@@ -1,0 +1,30 @@
+{
+  "_template": "drive-read",
+  "_description": "Google DriveファイルをIDで読み込むノード",
+  "_vars": ["FILE_ID", "WORKFLOW_NAME"],
+  "name": "{{WORKFLOW_NAME}}",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "{{WEBHOOK_ID}}"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": { "value": "{{FILE_ID}}", "__rl": true, "mode": "id" }
+      },
+      "name": "Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [460, 300],
+      "credentials": { "googleDriveOAuth2Api": { "id": "Z72mc0LCzm6a777h", "name": "Google SA" } }
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Google Drive", "type": "main", "index": 0 }]] }
+  }
+}
