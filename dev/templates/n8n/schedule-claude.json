@@ -1,0 +1,52 @@
+{
+  "_template": "schedule-claude",
+  "_description": "定期実行してClaudeに処理させLINEに通知する基本パターン",
+  "_vars": ["WORKFLOW_NAME", "CRON_HOUR", "CRON_MINUTE", "SYSTEM_PROMPT", "USER_PROMPT"],
+  "name": "{{WORKFLOW_NAME}}",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "{{CRON_MINUTE}} {{CRON_HOUR}} * * *" }]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "model": "claude-sonnet-4-6",
+        "messages": {
+          "values": [
+            { "role": "system", "content": "{{SYSTEM_PROMPT}}" },
+            { "role": "user", "content": "{{USER_PROMPT}}" }
+          ]
+        },
+        "options": { "maxTokensToSample": 2000 }
+      },
+      "name": "Claude",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [460, 300],
+      "credentials": { "anthropicApi": { "id": "6RjA3eGBjtQkbNiy", "name": "Anthropic" } }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "to": "{{LINE_USER_ID}}",
+        "text": "={{ $json.text }}"
+      },
+      "name": "LINE",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": { "lineApi": { "id": "K0c4UrAem1gYGaxD", "name": "LINE" } }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Claude", "type": "main", "index": 0 }]] },
+    "Claude": { "main": [[{ "node": "LINE", "type": "main", "index": 0 }]] }
+  }
+}
