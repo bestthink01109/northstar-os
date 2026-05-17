@@ -1,0 +1,64 @@
+{
+  "_template": "drive-to-line",
+  "_description": "DriveファイルをClaudeで要約してLINEに通知する（レポート通知の定番パターン）",
+  "_vars": ["WORKFLOW_NAME", "CRON_HOUR", "CRON_MINUTE", "FILE_ID", "SUMMARY_INSTRUCTION"],
+  "name": "{{WORKFLOW_NAME}}",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "{{CRON_MINUTE}} {{CRON_HOUR}} * * *" }]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": { "value": "{{FILE_ID}}", "__rl": true, "mode": "id" }
+      },
+      "name": "Drive読み込み",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [460, 300],
+      "credentials": { "googleDriveOAuth2Api": { "id": "Z72mc0LCzm6a777h", "name": "Google SA" } }
+    },
+    {
+      "parameters": {
+        "model": "claude-sonnet-4-6",
+        "messages": {
+          "values": [
+            { "role": "system", "content": "あなたはNorthStar OS COOです。" },
+            { "role": "user", "content": "={{  '{{SUMMARY_INSTRUCTION}}\\n\\n' + $json.data }}" }
+          ]
+        },
+        "options": { "maxTokensToSample": 1000 }
+      },
+      "name": "Claude要約",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [680, 300],
+      "credentials": { "anthropicApi": { "id": "6RjA3eGBjtQkbNiy", "name": "Anthropic" } }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "to": "{{LINE_USER_ID}}",
+        "text": "={{ $json.text }}"
+      },
+      "name": "LINE通知",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "credentials": { "lineApi": { "id": "K0c4UrAem1gYGaxD", "name": "LINE" } }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Drive読み込み", "type": "main", "index": 0 }]] },
+    "Drive読み込み": { "main": [[{ "node": "Claude要約", "type": "main", "index": 0 }]] },
+    "Claude要約": { "main": [[{ "node": "LINE通知", "type": "main", "index": 0 }]] }
+  }
+}
