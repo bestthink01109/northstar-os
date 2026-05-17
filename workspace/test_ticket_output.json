@@ -1,0 +1,32 @@
+{
+  "_template": "line-notify",
+  "_description": "LINE通知を送信するワークフロー",
+  "_vars": ["MESSAGE", "WORKFLOW_NAME"],
+  "name": "朝のアラートWF",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "to": "{{LINE_USER_ID}}",
+        "text": "おはようございます"
+      },
+      "name": "LINE",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": { "lineApi": { "id": "K0c4UrAem1gYGaxD", "name": "LINE" } }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "LINE", "type": "main", "index": 0 }]] }
+  }
+}
