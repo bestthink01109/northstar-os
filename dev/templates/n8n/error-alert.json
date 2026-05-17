@@ -1,0 +1,43 @@
+{
+  "_template": "error-alert",
+  "_description": "ワークフロー失敗時にLINEでアラートを送るエラーハンドラー",
+  "_vars": ["TARGET_WORKFLOW_ID", "WORKFLOW_NAME"],
+  "name": "{{WORKFLOW_NAME}}",
+  "nodes": [
+    {
+      "parameters": {
+        "events": ["workflowError"],
+        "workflowId": "{{TARGET_WORKFLOW_ID}}"
+      },
+      "name": "n8n Trigger",
+      "type": "n8n-nodes-base.n8nTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const wf = $input.first().json;\nreturn [{\n  json: {\n    text: `🚨 エラー発生\\nWF: ${wf.workflow?.name || '不明'}\\n時刻: ${new Date().toLocaleString('ja-JP', {timeZone:'Asia/Tokyo'})}\\nエラー: ${wf.execution?.error?.message || '不明'}`\n  }\n}];"
+      },
+      "name": "メッセージ整形",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "to": "{{LINE_USER_ID}}",
+        "text": "={{ $json.text }}"
+      },
+      "name": "LINE アラート",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": { "lineApi": { "id": "K0c4UrAem1gYGaxD", "name": "LINE" } }
+    }
+  ],
+  "connections": {
+    "n8n Trigger": { "main": [[{ "node": "メッセージ整形", "type": "main", "index": 0 }]] },
+    "メッセージ整形": { "main": [[{ "node": "LINE アラート", "type": "main", "index": 0 }]] }
+  }
+}
