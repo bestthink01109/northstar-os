@@ -96,3 +96,8 @@
 エラー: 2026-05-18 11:15:25
 Error loading config.toml: unknown variant `auto-edit`, expected one of `untrusted`, `on-failure`, `on-request`, `granular`, `never`
 in `approval_policy`
+
+## Codex処理ログ
+エラー: 2026-05-18 16:22:26
+Error loading config.toml: unknown variant `auto-edit`, expected one of `untrusted`, `on-failure`, `on-request`, `granular`, `never`
+in `approval_policy`
