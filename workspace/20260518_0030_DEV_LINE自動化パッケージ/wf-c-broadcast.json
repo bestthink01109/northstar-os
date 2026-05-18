@@ -1,0 +1,206 @@
+{
+  "name": "WF-C: LINE 定期一斉通知",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "={{$env.LINE_BROADCAST_CRON || '0 9 * * 1'}}"
+            }
+          ]
+        }
+      },
+      "id": "node-cron-trigger",
+      "name": "定期実行トリガー",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 配信設定を環境変数から取得\n// LINE_BROADCAST_MESSAGE: 送信するメッセージ本文\n// LINE_BROADCAST_MODE: 'broadcast' (全体) or 'multicast' (指定ユーザー)\n// LINE_BROADCAST_USE_SHEET: 'true' にするとGoogleスプレッドシートからユーザーID取得\n\nconst message = process.env.LINE_BROADCAST_MESSAGE \n  || '本日のお知らせです。\\nいつもご利用ありがとうございます。';\nconst mode = process.env.LINE_BROADCAST_MODE || 'broadcast';\nconst useSheet = process.env.LINE_BROADCAST_USE_SHEET === 'true';\n\nreturn [{\n  json: {\n    message,\n    mode,\n    useSheet\n  }\n}];"
+      },
+      "id": "node-load-config",
+      "name": "配信設定読み込み",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.useSheet}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-mode-check",
+      "name": "スプレッドシート使用判定",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{$env.LINE_SPREADSHEET_ID}}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{$env.LINE_SPREADSHEET_SHEET_NAME || 'Sheet1'}}",
+          "mode": "name"
+        },
+        "options": {
+          "headerRow": 1,
+          "firstDataRow": 2
+        }
+      },
+      "id": "node-get-sheet",
+      "name": "スプレッドシート取得",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [900, 180],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credential",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// スプレッドシートから取得したユーザーIDリストを整形\n// スプレッドシートのカラム名は 'userId' または 'user_id' を想定\nconst rows = $input.all();\nconst userIdColumn = process.env.LINE_SHEET_USERID_COLUMN || 'userId';\n\nconst userIds = rows\n  .map(r => r.json[userIdColumn] || r.json['user_id'] || r.json['UserId'])\n  .filter(id => typeof id === 'string' && id.startsWith('U') && id.length === 33);\n\nif (userIds.length === 0) {\n  throw new Error('スプレッドシートから有効なユーザーIDが取得できませんでした。カラム名を確認してください。');\n}\n\nreturn [{\n  json: {\n    userIds,\n    message: $input.first().json.message || process.env.LINE_BROADCAST_MESSAGE || '本日のお知らせです。',\n    mode: 'multicast'\n  }\n}];"
+      },
+      "id": "node-build-user-list",
+      "name": "ユーザーIDリスト整形",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Broadcastモード（全体配信）の場合はユーザーIDリスト不要\nconst message = $input.first().json.message;\nreturn [{\n  json: {\n    message,\n    mode: 'broadcast',\n    userIds: null\n  }\n}];"
+      },
+      "id": "node-broadcast-mode",
+      "name": "Broadcast設定",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 送信方式に応じてAPIエンドポイントとボディを構築\nconst item = $input.first().json;\nconst mode = item.mode || 'broadcast';\nconst message = item.message;\nconst userIds = item.userIds;\n\nlet endpoint;\nlet body;\n\nif (mode === 'multicast' && userIds && userIds.length > 0) {\n  endpoint = 'https://api.line.me/v2/bot/message/multicast';\n  body = {\n    to: userIds,\n    messages: [{ type: 'text', text: message }]\n  };\n} else {\n  endpoint = 'https://api.line.me/v2/bot/message/broadcast';\n  body = {\n    messages: [{ type: 'text', text: message }]\n  };\n}\n\nreturn [{\n  json: {\n    endpoint,\n    body: JSON.stringify(body),\n    mode,\n    recipientCount: userIds ? userIds.length : 'all'\n  }\n}];"
+      },
+      "id": "node-build-request",
+      "name": "APIリクエスト構築",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$json.endpoint}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{$json.body}}",
+        "options": {}
+      },
+      "id": "node-line-broadcast",
+      "name": "LINE 一斉送信",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1560, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "line-channel-access-token",
+          "name": "LINE Channel Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 送信結果のログ出力\nconst result = $input.first().json;\nconsole.log('[WF-C] 一斉送信完了:', JSON.stringify(result));\nreturn [{ json: { status: 'completed', result } }];"
+      },
+      "id": "node-log-result",
+      "name": "送信結果ログ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 300]
+    }
+  ],
+  "connections": {
+    "定期実行トリガー": {
+      "main": [
+        [{ "node": "配信設定読み込み", "type": "main", "index": 0 }]
+      ]
+    },
+    "配信設定読み込み": {
+      "main": [
+        [{ "node": "スプレッドシート使用判定", "type": "main", "index": 0 }]
+      ]
+    },
+    "スプレッドシート使用判定": {
+      "main": [
+        [{ "node": "Broadcast設定", "type": "main", "index": 0 }],
+        [{ "node": "スプレッドシート取得", "type": "main", "index": 0 }]
+      ]
+    },
+    "スプレッドシート取得": {
+      "main": [
+        [{ "node": "ユーザーIDリスト整形", "type": "main", "index": 0 }]
+      ]
+    },
+    "ユーザーIDリスト整形": {
+      "main": [
+        [{ "node": "APIリクエスト構築", "type": "main", "index": 0 }]
+      ]
+    },
+    "Broadcast設定": {
+      "main": [
+        [{ "node": "APIリクエスト構築", "type": "main", "index": 0 }]
+      ]
+    },
+    "APIリクエスト構築": {
+      "main": [
+        [{ "node": "LINE 一斉送信", "type": "main", "index": 0 }]
+      ]
+    },
+    "LINE 一斉送信": {
+      "main": [
+        [{ "node": "送信結果ログ", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "tags": ["LINE", "一斉送信", "Broadcast", "定期実行"],
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

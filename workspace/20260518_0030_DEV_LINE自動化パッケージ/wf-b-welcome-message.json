@@ -1,0 +1,151 @@
+{
+  "name": "WF-B: LINE ウェルカムメッセージ",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "line-webhook-welcome",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-welcome",
+      "name": "LINE Webhook受信",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "line-welcome-webhook-001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// LINE Webhookからfollowイベントを抽出する\nconst body = $input.first().json;\nconst events = body.events || [];\n\n// followイベントのみ抽出\nconst followEvents = events.filter(e => e.type === 'follow');\n\nif (followEvents.length === 0) {\n  return [{ json: { skip: true } }];\n}\n\nreturn followEvents.map(event => ({\n  json: {\n    replyToken: event.replyToken,\n    userId: event.source && event.source.userId,\n    eventType: event.type,\n    skip: false\n  }\n}));"
+      },
+      "id": "node-extract-follow",
+      "name": "フォローイベント抽出",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.skip}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-skip-check-welcome",
+      "name": "スキップ判定",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ウェルカムメッセージ設定を環境変数から取得\n// 環境変数 LINE_WELCOME_MESSAGE に文字列を設定すること\n// 例: \"友達追加ありがとうございます！\\nお気軽にメッセージをお送りください。\"\n\nconst welcomeMessage = process.env.LINE_WELCOME_MESSAGE \n  || 'ご登録ありがとうございます！\\nスタッフより順次ご連絡いたします。\\nお気軽にお問い合わせください。';\n\nconst replyToken = $input.first().json.replyToken;\nconst userId = $input.first().json.userId;\n\nreturn [{\n  json: {\n    replyToken,\n    userId,\n    welcomeMessage\n  }\n}];"
+      },
+      "id": "node-build-welcome",
+      "name": "ウェルカムメッセージ生成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/reply",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"replyToken\": \"{{$json.replyToken}}\",\n  \"messages\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"{{$json.welcomeMessage}}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "node-line-welcome-reply",
+      "name": "LINE ウェルカム送信",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1120, 180],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "line-channel-access-token",
+          "name": "LINE Channel Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\":\"ok\"}",
+        "options": {}
+      },
+      "id": "node-response-ok-welcome",
+      "name": "Webhook応答 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 180]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\":\"skipped\"}",
+        "options": {}
+      },
+      "id": "node-response-skip-welcome",
+      "name": "Webhook応答 Skip",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "LINE Webhook受信": {
+      "main": [
+        [{ "node": "フォローイベント抽出", "type": "main", "index": 0 }]
+      ]
+    },
+    "フォローイベント抽出": {
+      "main": [
+        [{ "node": "スキップ判定", "type": "main", "index": 0 }]
+      ]
+    },
+    "スキップ判定": {
+      "main": [
+        [{ "node": "Webhook応答 Skip", "type": "main", "index": 0 }],
+        [{ "node": "ウェルカムメッセージ生成", "type": "main", "index": 0 }]
+      ]
+    },
+    "ウェルカムメッセージ生成": {
+      "main": [
+        [{ "node": "LINE ウェルカム送信", "type": "main", "index": 0 }]
+      ]
+    },
+    "LINE ウェルカム送信": {
+      "main": [
+        [{ "node": "Webhook応答 OK", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "tags": ["LINE", "ウェルカム", "友達追加"],
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

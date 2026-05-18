@@ -1,0 +1,174 @@
+{
+  "name": "WF-A: LINE キーワード自動応答",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "line-webhook-keyword",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "LINE Webhook受信",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "line-keyword-webhook-001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// LINE Webhookの署名検証 + イベント抽出\nconst crypto = require('crypto');\n\nconst body = $input.first().json;\nconst headers = $input.first().binary ? {} : ($input.first().headers || {});\n\n// イベント配列を取り出す\nconst events = body.events || [];\n\n// メッセージイベントのみ通過\nconst messageEvents = events.filter(e => e.type === 'message' && e.message && e.message.type === 'text');\n\nif (messageEvents.length === 0) {\n  return [{ json: { skip: true } }];\n}\n\nreturn messageEvents.map(event => ({\n  json: {\n    replyToken: event.replyToken,\n    userId: event.source && event.source.userId,\n    text: event.message.text,\n    eventType: event.type\n  }\n}));"
+      },
+      "id": "node-extract-event",
+      "name": "イベント抽出",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.skip}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-skip-check",
+      "name": "スキップ判定",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// keywords.json の内容を環境変数から読み込む\n// 環境変数 LINE_KEYWORDS_JSON に JSON文字列を設定すること\n// 形式: [{\"keyword\":\"予約\",\"reply\":\"予約はこちら...\"}, ...]\n\nconst keywordsRaw = process.env.LINE_KEYWORDS_JSON || '[]';\nlet keywords = [];\ntry {\n  keywords = JSON.parse(keywordsRaw);\n} catch(e) {\n  keywords = [];\n}\n\nconst inputText = $input.first().json.text || '';\nconst replyToken = $input.first().json.replyToken;\nconst userId = $input.first().json.userId;\n\n// キーワードマッチング（部分一致）\nlet matchedReply = null;\nfor (const kw of keywords) {\n  if (inputText.includes(kw.keyword)) {\n    matchedReply = kw.reply;\n    break;\n  }\n}\n\nif (!matchedReply) {\n  return [{ json: { skip: true, reason: 'no_keyword_match', replyToken, userId, inputText } }];\n}\n\nreturn [{\n  json: {\n    skip: false,\n    replyToken,\n    userId,\n    inputText,\n    replyText: matchedReply\n  }\n}];"
+      },
+      "id": "node-keyword-match",
+      "name": "キーワードマッチング",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.skip}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-match-check",
+      "name": "マッチ判定",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/reply",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"replyToken\": \"{{$json.replyToken}}\",\n  \"messages\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"{{$json.replyText}}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "node-line-reply",
+      "name": "LINE返信送信",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1340, 100],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "line-channel-access-token",
+          "name": "LINE Channel Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\":\"ok\"}",
+        "options": {}
+      },
+      "id": "node-response-ok",
+      "name": "Webhook応答 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 100]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\":\"skipped\"}",
+        "options": {}
+      },
+      "id": "node-response-skip",
+      "name": "Webhook応答 Skip",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 400]
+    }
+  ],
+  "connections": {
+    "LINE Webhook受信": {
+      "main": [
+        [{ "node": "イベント抽出", "type": "main", "index": 0 }]
+      ]
+    },
+    "イベント抽出": {
+      "main": [
+        [{ "node": "スキップ判定", "type": "main", "index": 0 }]
+      ]
+    },
+    "スキップ判定": {
+      "main": [
+        [{ "node": "Webhook応答 Skip", "type": "main", "index": 0 }],
+        [{ "node": "キーワードマッチング", "type": "main", "index": 0 }]
+      ]
+    },
+    "キーワードマッチング": {
+      "main": [
+        [{ "node": "マッチ判定", "type": "main", "index": 0 }]
+      ]
+    },
+    "マッチ判定": {
+      "main": [
+        [{ "node": "Webhook応答 Skip", "type": "main", "index": 0 }],
+        [{ "node": "LINE返信送信", "type": "main", "index": 0 }]
+      ]
+    },
+    "LINE返信送信": {
+      "main": [
+        [{ "node": "Webhook応答 OK", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "tags": ["LINE", "自動応答", "キーワード"],
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

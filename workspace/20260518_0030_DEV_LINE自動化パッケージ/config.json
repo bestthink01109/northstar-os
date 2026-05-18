@@ -1,0 +1,22 @@
+{
+  "_comment": "このファイルはdeploy.shが環境変数に変換するための設定ファイルです。本番値は必ず差し替えてください。",
+  "line": {
+    "channel_access_token": "YOUR_LINE_CHANNEL_ACCESS_TOKEN",
+    "channel_secret": "YOUR_LINE_CHANNEL_SECRET",
+    "welcome_message": "友達追加ありがとうございます！\nノーススター経営サポートの公式LINEです。\nお気軽にメッセージをお送りください。",
+    "keywords_json_inline": ""
+  },
+  "broadcast": {
+    "cron": "0 9 * * 1",
+    "message": "今週のお知らせをお届けします。\n詳細はこちらをご確認ください。\nhttps://example.com/news",
+    "mode": "broadcast",
+    "use_sheet": false,
+    "spreadsheet_id": "",
+    "sheet_name": "Sheet1",
+    "userid_column": "userId"
+  },
+  "n8n": {
+    "base_url": "http://localhost:5678",
+    "api_key": "YOUR_N8N_API_KEY"
+  }
+}

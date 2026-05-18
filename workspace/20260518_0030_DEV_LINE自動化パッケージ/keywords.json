@@ -1,0 +1,22 @@
+[
+  {
+    "keyword": "予約",
+    "reply": "ご予約はこちらのURLからお願いします。\nhttps://example.com/reserve\n\nお電話でのご予約は 03-XXXX-XXXX までお気軽にどうぞ。"
+  },
+  {
+    "keyword": "営業時間",
+    "reply": "営業時間のご案内です。\n月〜金: 10:00〜19:00\n土: 10:00〜17:00\n日・祝: 定休日\n\nご不明な点はお気軽にお問い合わせください。"
+  },
+  {
+    "keyword": "料金",
+    "reply": "料金プランの詳細はこちらをご覧ください。\nhttps://example.com/pricing\n\nご質問があればお気軽にご連絡ください。"
+  },
+  {
+    "keyword": "住所",
+    "reply": "所在地のご案内です。\n〒000-0000 東京都○○区○○1-2-3\n\n最寄り駅: ○○駅 徒歩5分\nGoogleマップ: https://maps.google.com/?q=example"
+  },
+  {
+    "keyword": "問い合わせ",
+    "reply": "お問い合わせありがとうございます。\nこちらのフォームからご連絡ください。\nhttps://example.com/contact\n\n担当者より1営業日以内にご返答いたします。"
+  }
+]
