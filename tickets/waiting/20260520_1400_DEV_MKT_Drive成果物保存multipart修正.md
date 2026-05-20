@@ -86,3 +86,9 @@ curl "http://162.43.78.67:5678/api/v1/executions?workflowId=ht60IBCItF9vt1vO&lim
 ## 成功条件
 - WF実行がsuccessで完了すること
 - Google Drive Reports/RSC/ フォルダに MKT_PRタイムズ_YYYYMMDD.md が保存されること
+
+## L3 Agent 実装ログ
+完了: 2026-05-20 14:30:49
+生成ファイル数: 1
+保存先: /root/northstar-os/workspace/20260520_1400_DEV_MKT_Drive成果物保存multipart修正/
+- fix_mkt_pr_drive_upload.py
