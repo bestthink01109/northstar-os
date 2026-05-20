@@ -72,6 +72,25 @@ handle_layer2() {
 
   if [ $exit_code -eq 0 ] && [ -n "$result" ]; then
     echo -e "\n## Layer 2 生成結果\n$result" >> "$ticket"
+
+    # Type Bレポート形式で追記
+    cat >> "$ticket" << REPORT
+
+## DEV_レポート（Type B）
+- 完了日時: $(date '+%Y-%m-%d %H:%M:%S') JST
+- Layer: L2
+- 担当AI: Claude Code (claude --print)
+
+### 実装概要
+$result
+
+### スキル化候補
+（L2自動生成のため未評価）
+
+### 完了確認
+- 実行結果: 正常完了
+REPORT
+
     mv "$ticket" "$DONE/$name"
     log "[L2] 完了 → done/: $name"
     cd $REPO && git add -A && git commit -m "L2完了: $name" && git push origin main 2>&1 | tee -a "$LOG"
