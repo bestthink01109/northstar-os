@@ -1,29 +1,38 @@
----
 # Technical Setup | NorthStar OS
-# 更新日: 2026-05-20（セッション終了版・最終）
----
+# 更新日: 2026-05-21
 
-※最新版は /Users/fuminariaksse/.claude/context/technical_setup.md を参照
-このファイルはGitHubバックアップ用コピーです。セッション終了時に自動更新されます。
+最新版は /Users/fuminariaksse/.claude/context/technical_setup.md を参照。
 
-## 稼働中ツール
+## 主要インフラ
+- VPS: 162.43.78.67 (シンVPS Ubuntu 24.04)
+- n8n: Docker稼働 TZ=Asia/Tokyo (JST)
+- n8n API: http://162.43.78.67:5678
 
-| ツール | 用途 | エンドポイント |
-|--------|------|--------------|
-| Claude Code（COO） | 戦略・監督・例外処理 | ローカルMac |
-| n8n | オーケストレーター（24/7） | http://162.43.78.67:5678 |
-| LINE Harness | LINE自動化 | northstar-line.bestthink01109.workers.dev |
-| Google Drive | 全成果物・データ保存 | drive.js経由 |
-| GitHub（Public） | コード・マニュアル・DEVチケット | bestthink01109/northstar-os |
+## n8n TZ=Asia/Tokyo（重要）
+cronは全てJST値で設定。UTC計算不要。
+例: 5:30 JST = `30 5 * * *`
 
-## VPS情報
+## スケジュール確定表（JST）
+| WF | cron | JST |
+|----|------|-----|
+| APIコスト | 30 0 * * * | 0:30 |
+| n8nバックアップ | 0 3 * * * | 3:00 |
+| MKT_PR | 30 5 * * * | 5:30 |
+| SALES_PR | 45 5 * * * | 5:45 |
+| RSCリサーチ | 0 6 * * * | 6:00 |
+| SALES日次 | 30 6 * * * | 6:30 |
+| 全社ボード朝 | 50 6 * * * | 6:50 |
+| 朝ブリーフィング | 0 7 * * * | 7:00 |
+| 部門日次 | 45 18 * * * | 18:45 |
+| 夕リフレクション | 0 19 * * * | 19:00 |
+| 全社ボード夜 | 0 19 * * * | 19:00 |
+| System QA | 0 12 * * * | 12:00 |
 
-- IP: 162.43.78.67（シンVPS）
-- OS: Ubuntu 24.04.4 LTS
-- n8n: Docker稼働（:5678）
-- SSH: ~/.ssh/vps_key
-
-## 共通GoogleOAuth WF
-
+## 共通OAuth WF
 - ID: Eu3kQaH8vQpJmyqd
-- Webhook: http://localhost:5678/webhook/google-oauth-token
+- URL: http://localhost:5678/webhook/google-oauth-token
+- 参照: $('OAuthトークン取得').item.json.access_token
+
+## バックアップ体制
+- n8n WF定義: GitHub backups/n8n/ 毎日3:00 JST
+- SQLite DB: /root/backups/sqlite/ 毎日3:30 JST (cron)
