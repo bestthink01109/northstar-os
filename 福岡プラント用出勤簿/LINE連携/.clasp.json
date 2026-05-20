@@ -1,16 +1,5 @@
 {
-  "scriptId": "1bL-27TCsBnfIU_ev6fXtTf_jKSEYMIbD41dVqHG3UTl0iiG72cmMHfmW",
-  "rootDir": "",
-  "scriptExtensions": [
-    ".js",
-    ".gs"
-  ],
-  "htmlExtensions": [
-    ".html"
-  ],
-  "jsonExtensions": [
-    ".json"
-  ],
-  "filePushOrder": [],
-  "skipSubdirectories": false
+  "scriptId": "17mvt6rR_spjM9xYOvzx2L1kmL5k3MRsFYpHDgv4apzTvUarWaV5zp6fk",
+  "rootDir": "/Users/fuminariaksse/Desktop/antigravity Folder/福岡プラント用出勤簿/LINE連携",
+  "deploymentId": "AKfycbz2TC78YUYILx9TRiFKB2kbuuUVCTGwhEC2ZraWUG03h6wFlkSr6wSK1_ICRfb2ToGcIg"
 }
