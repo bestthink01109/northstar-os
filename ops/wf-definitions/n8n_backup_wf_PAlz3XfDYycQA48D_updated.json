@@ -1,0 +1,32 @@
+{
+  "_meta": {
+    "wf_id": "PAlz3XfDYycQA48D",
+    "updated": "2026-05-21",
+    "description": "バックアップ完了通知ノード（backup-board-notify）を GitHub commit の後に追加。センシティブ値はマスク済み。",
+    "apply_cmd": "bash /Users/fuminariaksse/.config/gdrive-mcp/n8n-api.sh update-workflow-filtered PAlz3XfDYycQA48D /tmp/backup_wf_updated.json"
+  },
+  "changes": {
+    "added_node": {
+      "id": "backup-board-notify",
+      "name": "バックアップ完了通知",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1200, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/board-sync",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\"trigger\": \"backup_complete\", \"wf\": \"n8nバックアップ\", \"datetime\": \"{{ new Date(Date.now()+9*60*60*1000).toISOString().replace('T',' ').substring(0,19) }} JST\", \"dept\": \"DEV\", \"status\": \"成功\", \"desc\": \"n8nバックアップ完了（GitHub+SQLite）\", \"dest\": \"GitHub: backups/n8n/ + VPS: /root/backups/sqlite/\"}",
+        "options": {"timeout": 5000, "response": {"response": {"neverError": true}}}
+      }
+    },
+    "added_connection": {
+      "from": "GitHub commit",
+      "to": "バックアップ完了通知",
+      "type": "main",
+      "index": 0
+    }
+  }
+}
