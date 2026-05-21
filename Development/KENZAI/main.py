@@ -241,12 +241,25 @@ def process_company(company_id, year, month, excel_path=None, verbose=True, suff
 
         # (e) エクスポート用データ蓄積
         csv_records.append((emp_code, emp_full_name, monthly))
+
+        # 外勤手当/日を社員マスターから取得（純青固有。他社は0）
+        field_work_allowance_per_day = 0
+        if hasattr(emp_info, 'get'):
+            field_work_allowance_per_day = emp_info.get('field_work_allowance', 0)
+        field_work_days = monthly.get('total_field_work_days', 0)
+        field_work_total = field_work_days * field_work_allowance_per_day
+
+        if verbose and field_work_days > 0:
+            print(f"    外勤: {field_work_days}日 × ¥{field_work_allowance_per_day:,} = ¥{field_work_total:,}")
+
         attendance_data.append({
             'employee_name': emp_full_name,
             'employee_code': emp_code,
             'calc_results': calc_results,
             'monthly': monthly,
             'is_special': sheet_data.get('is_special', False),
+            'field_work_allowance_per_day': field_work_allowance_per_day,  # 外勤手当/日
+            'field_work_total': field_work_total,                           # 外勤手当合計
         })
 
         # (f) 差異レポート用データ蓄積（Excel入力の場合）

@@ -22,6 +22,7 @@ class MonthlyAggregator:
         total_absence = 0.0
         total_holiday_w = 0.0
         attend_days = 0
+        total_field_work_days = 0  # 外勤日数（純青固有）
 
         # summary_excelの取得（dict形式とEmployeeMonthData形式の両対応）
         if isinstance(sheet_data, dict):
@@ -53,6 +54,14 @@ class MonthlyAggregator:
                 excel_hw = getattr(day_rec, 'excel_holiday_w', 0.0)
             total_holiday_w += excel_hw
 
+            # 外勤日数の集計（純青固有フラグ）
+            if isinstance(day_rec, dict):
+                if day_rec.get('field_work', False):
+                    total_field_work_days += 1
+            else:
+                if getattr(day_rec, 'field_work', False):
+                    total_field_work_days += 1
+
         # 勤務日数：Excel集計行に値がある場合はそちらを優先
         # （現行エンジンとの互換性保証のため）
         excel_attend = summary_excel.get('attend_days', 0) if isinstance(summary_excel, dict) else 0
@@ -68,4 +77,5 @@ class MonthlyAggregator:
             'total_holiday_w': round(total_holiday_w, 1),
             'paid_days': paid_days,
             'paid_hours': paid_hours,
+            'total_field_work_days': total_field_work_days,  # 外勤日数（純青固有）
         }

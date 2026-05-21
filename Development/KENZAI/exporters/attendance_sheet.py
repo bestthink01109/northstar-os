@@ -18,7 +18,7 @@ class AttendanceSheetExporter:
     HEADERS = [
         '日', '曜日', '出勤', '退勤', '休憩', '実働',
         '所定', '勤務', '延長', '残業', '遅刻早退',
-        '欠勤', '有給種別', '有給時間', '備考'
+        '欠勤', '有給種別', '有給時間', '外勤', '備考'
     ]
 
     # スタイル定義
@@ -67,6 +67,9 @@ class AttendanceSheetExporter:
         return output_path
 
     def _create_employee_sheet(self, wb, emp_data, company_name, year, month):
+        # 外勤手当情報（純青固有。ない場合は0）
+        field_work_allowance_per_day = emp_data.get('field_work_allowance_per_day', 0)
+        field_work_total = emp_data.get('field_work_total', 0)
         """1社員分のシートを作成する。"""
         emp_name = emp_data['employee_name']
         emp_code = emp_data['employee_code']
@@ -94,7 +97,7 @@ class AttendanceSheetExporter:
             cell.border = self.THIN_BORDER
 
         # ── 列幅設定 ──
-        col_widths = [4, 5, 7, 7, 5, 6, 6, 6, 6, 6, 8, 6, 8, 8, 12]
+        col_widths = [4, 5, 7, 7, 5, 6, 6, 6, 6, 6, 8, 6, 8, 8, 5, 12]
         for i, w in enumerate(col_widths, 1):
             ws.column_dimensions[get_column_letter(i)].width = w
 
@@ -120,6 +123,8 @@ class AttendanceSheetExporter:
             calc_actual = calc['actual_work'] if isinstance(calc, dict) else calc.actual_work
             calc_scheduled = calc['scheduled'] if isinstance(calc, dict) else calc.scheduled
             calc_break = calc.get('break_hours', 0) if isinstance(calc, dict) else getattr(calc, 'break_hours', 0)
+            # 外勤フラグ（純青固有）
+            field_work = day_rec.get('field_work', False) if isinstance(day_rec, dict) else getattr(day_rec, 'field_work', False)
 
             # 有給種別の判定
             paid_type = ''
@@ -150,6 +155,7 @@ class AttendanceSheetExporter:
                 calc_scheduled if is_absent else '',                               # 欠勤
                 paid_type,                                                         # 有給種別
                 paid_hours if paid_hours > 0 else '',                              # 有給時間
+                '◯' if field_work else '',                                         # 外勤
                 '',                                                                # 備考
             ]
 
@@ -169,6 +175,18 @@ class AttendanceSheetExporter:
 
         # ── 集計行 ──
         row_num += 1  # 1行空ける
+        # 外勤手当の集計文字列
+        field_work_days = monthly.get('total_field_work_days', 0)
+        if field_work_days > 0 and field_work_allowance_per_day > 0:
+            field_work_str = f"{field_work_days}日"
+            field_work_note = f"外勤手当 ¥{field_work_total:,}"
+        elif field_work_days > 0:
+            field_work_str = f"{field_work_days}日"
+            field_work_note = ''
+        else:
+            field_work_str = ''
+            field_work_note = ''
+
         totals = [
             '集計', '',
             '', '',                                            # 出勤・退勤（空欄）
@@ -182,7 +200,8 @@ class AttendanceSheetExporter:
             '',                                                # 欠勤（空欄）
             f"{monthly['paid_days']}日",                       # 有給日数
             monthly['paid_hours'],                             # 有給時間合計
-            f"出勤{monthly['attend_days']}日",                 # 備考
+            field_work_str,                                    # 外勤日数
+            f"出勤{monthly['attend_days']}日 {field_work_note}".strip(),  # 備考
         ]
 
         for col_idx, val in enumerate(totals, 1):
