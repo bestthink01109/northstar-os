@@ -1,6 +1,6 @@
 ---
 # Philosophy & Values | NorthStar OS
-# 更新日: 2026-05-20
+# 更新日: 2026-05-22
 ---
 
 ## 会社理念
