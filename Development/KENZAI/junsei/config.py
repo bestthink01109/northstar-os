@@ -28,7 +28,7 @@ def create_junsei_config() -> CompanyConfig:
         company_name='純青',
 
         # ── インプット ──
-        input_type='image',
+        input_type='pdf',
         input_dir=os.path.join(gdrive_base, '🏢【KENZAI】給与計算', '📥 01_ここに入力データをポン（生データ用）', '純青'),
 
         # ── アウトプット ──

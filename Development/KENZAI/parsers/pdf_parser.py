@@ -1,19 +1,17 @@
 """
 pdf_parser.py
-スキャンPDF日報パーサー（株式会社福岡プラント機工用）。
+スキャンPDFパーサー（マルチ会社対応）。
 
-スキャンPDF（画像として埋め込まれた日報）を
+対応会社:
+  - junsei（株式会社純青）: 手書き出勤簿スキャンPDF
+  - fukuoka_plant（福岡プラント機工）: 日報スキャンPDF
+
+スキャンPDF（画像として埋め込まれた書類）を
 OCREngine で読み取り、DayRecord 形式に変換する。
 
-日報の特徴（BUN_CEO確認済み）:
-  - 1日1ページ または 月まとめ
-  - フリーフォーマット（時間以外の情報も含まれる可能性）
-  - 出退勤時刻が含まれている想定
-  ※ サンプルPDF入手後にフォーマット解析を行い、本パーサーを精緻化する
-
 フロー:
-  1. PDFを画像に変換（pdf2image or fitz）
-  2. 各ページをOCREngine で認識
+  1. PDFを画像に変換（PyMuPDF/fitz を優先、pdf2image はフォールバック）
+  2. 各ページをOCREngine で認識（Mac Vision → Claude → Gemini の順）
   3. 認識結果から出退勤時刻を抽出してDayRecord形式に変換
 """
 
@@ -30,7 +28,42 @@ from parsers.ocr_engine import OCREngine
 from base_config import CompanyConfig
 
 
-# 福岡プラント機工の日報で期待されるデータ構造（OCRプロンプト用）
+# ─── 純青（junsei）の手書き出勤簿PDFで期待されるデータ構造（OCRプロンプト用） ───
+JUNSEI_EXPECTED_FORMAT = """
+この出勤簿の各行には以下の情報が含まれます:
+- 日付（1〜31の数字）
+- 曜日（月,火,水,木,金,土,日）
+- 出勤時刻（HH:MM形式、例: 8:00, 07:30）
+- 退勤時刻（HH:MM形式、例: 17:00, 18:30）
+- 有給（有給休暇の場合「有」「有給」「有休」「○」等の記載）
+- 外勤（外勤した日に「○」「◯」等の記載）
+- 備考（早退、遅刻等の記載がある場合）
+
+また、出勤簿の冒頭または末尾に社員名が記載されている場合があります。
+
+各行を以下のJSON形式で出力してください:
+{
+  "employee_name": "社員名（記載があれば）",
+  "year": 2026,
+  "month": 5,
+  "days": [
+    {
+      "day": 1,
+      "weekday": "月",
+      "start_time": "8:00",
+      "end_time": "17:00",
+      "paid_leave": false,
+      "field_work": false,
+      "notes": ""
+    }
+  ]
+}
+
+空白行やデータのない日も day と weekday を含めて出力してください。
+出退勤時刻が記載されていない日は start_time と end_time を null にしてください。
+"""
+
+# ─── 福岡プラント機工の日報で期待されるデータ構造（OCRプロンプト用） ───
 # ※ サンプルPDF入手後に精緻に調整する
 FUKUOKA_EXPECTED_FORMAT = """
 この日報から以下の勤怠情報を読み取ってください:
@@ -56,16 +89,26 @@ FUKUOKA_EXPECTED_FORMAT = """
 複数日分のデータがある場合はJSON配列で出力してください。
 """
 
+# 会社IDごとのフォーマットマッピング
+COMPANY_EXPECTED_FORMATS = {
+    'junsei': JUNSEI_EXPECTED_FORMAT,
+    'fukuoka_plant': FUKUOKA_EXPECTED_FORMAT,
+}
+
 
 class PDFParser(InputParser):
     """
-    スキャンPDF日報パーサー。
-    PDF → 画像変換 → OCR → DayRecord形式 のパイプライン。
+    スキャンPDFパーサー（マルチ会社対応）。
+    PDF → 画像変換 → OCR（Mac Vision → Claude → Gemini） → DayRecord形式 のパイプライン。
     """
 
     def __init__(self, config: CompanyConfig, ocr_backend: str = 'auto'):
         super().__init__(config)
         self.ocr = OCREngine(preferred_backend=ocr_backend)
+        # 会社IDに応じてOCRプロンプトフォーマットを選択
+        self.expected_format = COMPANY_EXPECTED_FORMATS.get(
+            config.company_id, FUKUOKA_EXPECTED_FORMAT
+        )
         self._check_dependencies()
 
     def _check_dependencies(self):
@@ -147,19 +190,23 @@ class PDFParser(InputParser):
         if not images:
             return []
 
-        # 2. 各ページをOCRで認識
+        # 2. 各ページをOCRで認識（会社IDに応じたフォーマットを使用）
         page_results = []
         for i, img_path in enumerate(images):
             print(f"  [OCR] ページ {i+1}/{len(images)} を認識中...")
             result = self.ocr.recognize(
                 img_path,
                 language='ja',
-                expected_format=FUKUOKA_EXPECTED_FORMAT,
+                expected_format=self.expected_format,
             )
             page_results.append(result)
 
-        # 3. 認識結果を社員ごとのDayRecordに変換
-        employee_days = self._results_to_employee_days(page_results, employee_master)
+        # 3. 認識結果を社員ごとのDayRecordに変換（会社IDに応じた処理）
+        company_id = self.config.company_id if hasattr(self, 'config') else ''
+        if company_id == 'junsei':
+            employee_days = self._results_to_employee_days_junsei(page_results, employee_master)
+        else:
+            employee_days = self._results_to_employee_days(page_results, employee_master)
 
         # 4. sheet_data形式に変換
         all_data = []
@@ -329,6 +376,104 @@ class PDFParser(InputParser):
             'excel_absence': 0.0,
             'notes': notes,
             '_date': date_str,
+        }
+
+    def _results_to_employee_days_junsei(self, page_results: List[Dict],
+                                          employee_master: Dict) -> Dict[str, List[Dict]]:
+        """
+        純青用OCR結果パーサー。
+        JUNSEI_EXPECTED_FORMAT の構造化データ（employee_name + days配列）を
+        社員ごとのDayRecordリストに変換する。
+        """
+        employee_days = {}
+
+        for result in page_results:
+            structured = result.get('structured')
+            if structured is None:
+                print("  [注意] 構造化抽出失敗。このページはスキップします。")
+                continue
+
+            # JUNSEI_EXPECTED_FORMAT は { employee_name, year, month, days:[] } の形
+            # ページごとに1名分 or 複数ページで分割されている場合も想定
+            records = structured if isinstance(structured, list) else [structured]
+
+            for record in records:
+                emp_name = record.get('employee_name', '')
+                if not emp_name:
+                    emp_name = 'unknown'
+
+                # 社員マスターとのファジーマッチング
+                matched_name = emp_name
+                for master_name in employee_master:
+                    if master_name in emp_name or emp_name in master_name:
+                        matched_name = master_name
+                        break
+
+                if matched_name not in employee_days:
+                    employee_days[matched_name] = []
+
+                # days配列をDayRecordに変換
+                days_raw = record.get('days', [])
+                for day_item in days_raw:
+                    day_rec = self._junsei_item_to_day_record(day_item)
+                    if day_rec:
+                        employee_days[matched_name].append(day_rec)
+
+        return employee_days
+
+    def _junsei_item_to_day_record(self, item: Dict) -> Optional[Dict]:
+        """
+        純青OCR結果の1日分データをDayRecord互換dictに変換する。
+        入力: { day, weekday, start_time, end_time, paid_leave, field_work, notes }
+        """
+        day_num = item.get('day')
+        if day_num is None:
+            return None
+
+        weekday = item.get('weekday', '')
+        start = item.get('start_time')
+        end = item.get('end_time')
+        notes = item.get('notes', '')
+
+        # 有給フラグの正規化（bool / str 両対応）
+        is_paid = item.get('paid_leave', False)
+        if isinstance(is_paid, str):
+            is_paid = is_paid in ('有', '有給', '有休', '○', '◯', 'true', 'True', '1')
+
+        # 外勤フラグの正規化
+        field_work = item.get('field_work', False)
+        if isinstance(field_work, str):
+            field_work = field_work in ('○', '◯', 'true', 'True', '1')
+
+        t_start = self._parse_time(start)
+        t_end = self._parse_time(end)
+
+        return {
+            'row': int(day_num) + 2,
+            'day': int(day_num),
+            'weekday': weekday,
+            'place': '',
+            't_start': t_start,
+            't_end': t_end,
+            't_depart': t_start,
+            't_site_s': None,
+            't_site_e': None,
+            't_arrive': t_end,
+            'time_off': 0.0,
+            'time_off_raw': '',
+            'is_absent': False,
+            'is_paid': bool(is_paid),
+            'is_training': False,
+            'is_saturday': weekday == '土',
+            'is_sunday': weekday == '日',
+            'excel_work': 0.0,
+            'excel_ot_out': 0.0,
+            'excel_ot_in': 0.0,
+            'excel_holiday_w': 0.0,
+            'excel_absence': 0.0,
+            # 純青固有: 外勤フラグ
+            'field_work': bool(field_work),
+            'notes': str(notes) if notes else '',
         }
 
     def _parse_time(self, time_str: Optional[str]) -> Optional[float]:
