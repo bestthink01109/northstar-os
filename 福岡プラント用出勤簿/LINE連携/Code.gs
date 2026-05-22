@@ -68,7 +68,9 @@ function doPost(e) {
   } catch (err) {
     Logger.log("doPost エラー: " + err.message);
   }
-  return ContentService.createTextOutput("ok");
+  // ContentService を使うと GAS が 302（echoリダイレクト）を返し
+  // LINE webhook が受け取れなくなるため、空で return して 200 を直接返す
+  return;
 }
 
 /**

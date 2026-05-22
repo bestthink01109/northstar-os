@@ -8,12 +8,6 @@
   "executionApi": {
     "access": "MYSELF"
   },
-  "oauthScopes": [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-    "https://www.googleapis.com/auth/script.scriptapp",
-    "https://www.googleapis.com/auth/script.external_request"
-  ],
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8"
 }
