@@ -1,6 +1,6 @@
 ---
 # AI Handoff | NorthStar OS
-# 更新日: 2026-05-22（YouTube insight分析・アクションプラン策定版）
+# 更新日: 2026-05-22（YouTube insight分析・DeepSeek認証共通化修復・OPS福岡プラントLINE Bot復旧）
 # ※このファイルはセッション終了時にCOOが必ず更新する
 ---
 
@@ -65,7 +65,7 @@ OPS  : 労務・シフト管理（別COOセッションで稼働中）
 ```
 部門  | 実行AI                  | デバッグ     | QA            | 稼働形態
 ------|-------------------------|-------------|----------------|------------------
-DEV   | Python+Claude API（VPS） | Codex CLI   | DeepSeek(n8n)  | VPS・Ticket自動
+DEV   | Claude Code（別人格VPS）  | Codex CLI   | DeepSeek(n8n)  | VPS・Ticket自動
 RSC   | Gemini（n8n）            | なし        | なし（不要）    | n8n 24/7
 MKT   | Claude Sonnet（n8n）     | なし        | GPT-4o(n8n)    | n8n 24/7
 SALES | Claude Sonnet（n8n）     | なし        | GPT-4o(n8n)    | n8n 24/7
@@ -73,15 +73,15 @@ FIN   | Claude Sonnet（n8n）     | なし        | GPT-4o(n8n)    | n8n 24/7
 OPS   | Claude Code（別人格）     | なし        | GPT-4o+Python  | 別COOセッション
 ```
 
-### DEV 3層パイプライン（2026-05-17完成・2026-05-19 L3修正完了）
+### DEV 3層パイプライン（2026-05-17完成・稼働中）
 ```
 COO → GitHub tickets/todo/ にcommit
     ↓ VPS ticket-puller（60秒ポーリング）
 Layer判定（チケットメタデータから自動）
     ↙           ↓            ↘
   L1(¥0)      L2(¥10-30)    L3(¥100-800)
-テンプレ      claude          Python+Claude API
-ート適用      --print         (l3_agent.py) ✅正常稼働
+テンプレ      claude          claude
+ート適用      --print         フルエージェント
                                    ↓
                              Codex exec（デバッグ専任）
                                    ↓
@@ -103,30 +103,30 @@ DEV L1：¥0 / L2：¥10〜30 / L3：¥100〜800
 | 朝ブリーフィング | NjmKR3rlzaAdznoB | ✅稼働中 |
 | 夕リフレクション | VD4QeU4XVfhqmMbl | ✅稼働中 |
 | 全社ボード同期 | oX27R5nH3AYa6KlW | ✅稼働中（7:00/19:00 JST） |
-| RSCリサーチ | 796EUn4zvboKFQiP | ✅稼働中 |
-| 部門日次報告 | 4LTj5vfwCcDqVUKc | ✅稼働中 |
-| BizDevスキャン | 0zftWq8EAnbcJwrE | ✅稼働中 |
-| Signal DB分析 | wxJUU8dPwbWqFyGP | ✅稼働中 |
-| FIN月次レポート | uxIDllsGUiDilADI | ✅稼働中（ベリファイノード追加が今週タスク） |
-| System QA夜間 | dSItw958pDfl3fMs | ✅稼働中（21:00 JST） |
-| MKT_PRタイムズ | ht60IBCItF9vt1vO | ❌エラー継続（JSON Body不正・今週修正） |
-| MKT_SNSコンテンツ | YGacVsIyaf43mfG2 | ✅稼働中 |
-| SALES日次レビュー | lIPXpgBTg478uHW0 | ✅稼働中 |
+| RSCリサーチ | 796EUn4zvboKFQiP | ✅稼働中（本日6:00 success） |
+| 部門日次報告 | 4LTj5vfwCcDqVUKc | ✅テスト成功・本番18:45待ち |
+| BizDevスキャン | 0zftWq8EAnbcJwrE | ✅稼働中（月曜実行済み） |
+| Signal DB分析 | wxJUU8dPwbWqFyGP | ✅テスト成功・日曜4:00待ち |
+| FIN月次レポート | uxIDllsGUiDilADI | ✅テスト成功・月1日待ち |
+| System QA夜間 | dSItw958pDfl3fMs | ✅稼働中（21:00 UTC=JST12:00） |
+| MKT_PRタイムズ | ht60IBCItF9vt1vO | ❌エラー継続（JSON Body不正） |
+| MKT_SNSコンテンツ | YGacVsIyaf43mfG2 | ✅テスト成功 |
+| SALES日次レビュー | lIPXpgBTg478uHW0 | ✅テスト成功 |
 | SALES承認Webhook | zFS7khgDCmK5GR0L | ⚠️骨格のみ・Playwright未実装 |
-| APIコスト日次更新 | 0XHdY5FAsuAkwtVW | ✅稼働中 |
-| LINEコマンド | Ury2oteVKpcHBI8m | ✅（LINE月次上限中） |
-| n8nバックアップ | PAlz3XfDYycQA48D | ✅稼働中 |
-| n8nエラーアラート | VOR8Hbpt8FYEtmIp | ✅強化済み |
+| APIコスト日次更新 | 0XHdY5FAsuAkwtVW | ✅実値取得（DeepSeek差分、他0） |
+| LINEコマンド | Ury2oteVKpcHBI8m | ✅ |
+| n8nバックアップ | PAlz3XfDYycQA48D | ✅テスト成功 |
+| n8nエラーアラート | VOR8Hbpt8FYEtmIp | ✅強化済み（全社ボード書き込み追加） |
 | プリフライト3回パス | pbGRNA9dKLzHqqxQ | ✅ |
-| DEV QA(DeepSeek) | RAtN2vX8tMOfHJ5G | ✅稼働中 |
-| SALES_PRタイムズ | Ru1FfTgXk6YWczjk | ⚠️エラー継続（今週修正） |
-| LINE自動化デモ | l5snFeHnKr435xiL | ⚠️認証エラー |
-| 共通GoogleOAuth | Eu3kQaH8vQpJmyqd | ✅全WFが参照 |
+| DEV QA(DeepSeek) | RAtN2vX8tMOfHJ5G | ✅共通認証修復・ナレッジ保管済 |
+| SALES_PRタイムズ自動営業スキャン | Ru1FfTgXk6YWczjk | ⚠️エラー継続（要調査） |
+| LINE自動化デモ | l5snFeHnKr435xiL | ✅ |
+| 🔑 共通GoogleOAuthトークン（新設） | Eu3kQaH8vQpJmyqd | ✅全WFが参照（一括管理） |
 
 ---
 
-## 完了済みタスク（累計〜2026-05-21）
-（省略：前バージョン参照）
+## 完了済みタスク（累計・2026-05-17〜21）
+（省略 - 詳細は旧バージョン参照）
 
 ## 完了済みタスク（2026-05-22追加分）
 | タスク | 完了日 |
@@ -136,84 +136,60 @@ DEV L1：¥0 / L2：¥10〜30 / L3：¥100〜800
 | L3 DEVパイプライン ⚠️→✅ 実態確認（2026-05-19修正済みを検証） | 2026-05-22 |
 | NS_OS_ARCHITECTURE.md L3ステータス更新（Python+Claude API方式✅） | 2026-05-22 |
 | drive.js認証トラブルシューティング手順をai_handoff.mdに追記 | 2026-05-22 |
+| DeepSeek API 認証共通化修復およびノードJSON定義修正完了 | 2026-05-22 |
+| トラブル経緯・根本原因・予防策の永続ナレッジ化（deepseek_credentials_recovery.md） | 2026-05-22 |
+| 動作検証報告書（walkthrough.md）の更新と、上記2ナレッジをsystemQAエラー保管フォルダに格納 | 2026-05-22 |
+| 本番環境全23ワークフローのLINE通知エラー耐性（onError: continueRegularOutput）網羅的監査と適用保証の完了 | 2026-05-22 |
+| LINE通知網羅的監査結果のwalkthrough.md（systemQAエラー保管フォルダ）への資産化 | 2026-05-22 |
 
----
+## 完了済みタスク（2026-05-22 OPSセッション）
+| タスク | 完了日 |
+|--------|--------|
+| 福岡プラントLINE Bot 302エラーの根本原因特定・完全復旧 | 2026-05-22 |
+| oauthScopes追加によるGAS認証破壊の修復（全スコープ再認証） | 2026-05-22 |
+| processQueueトリガー SpreadsheetApp権限エラー修復 | 2026-05-22 |
+| Gemini APIキー期限切れ特定・BUN_CEO側で更新完了 | 2026-05-22 |
+| LINE Botシステム完全復旧（doPost→キュー→Gemini→SS） | 2026-05-22 |
+
+## OPSシステム注意事項（2026-05-22追加・次回必読）
+- **appsscript.jsonにoauthScopesを追加禁止**: Webhookが302になる
+- **GASの権限再認証はGASエディタから手動実行のみ有効**
+- **Gemini APIキーは定期更新が必要**（AI Studio: aistudio.google.com/app/apikey）
+- **clasp tokenが期限切れ**: 次回push時は `clasp login` が必要
 
 ## 積み残しタスク（優先順・次セッション開始時に着手）
-※ 2026-05-22 YouTubeインサイト分析を踏まえて全面更新
 
 ### 🔴 今週（2026-05-22〜28）着手必須
 | 優先 | タスク | 工数 | 根拠 |
 |------|--------|------|------|
 | 🔴 | 全社ボード確認（セッション開始必須）| — | 毎セッション |
-| 🔴 | **GitHubリポジトリ機密情報監査**（northstar-osに機密混入チェック） | 30min | GitHub漏洩事件 |
-| 🔴 | **FIN月次レポートWFにベリファイノード3つ追加**（数値整合・±30%・保存確認） | 2h | ハーネス原則 |
+| 🔴 | **GitHubリポジトリ機密情報監査** | 30min | GitHub漏洩事件 |
+| 🔴 | **FIN月次レポートWFにベリファイノード3つ追加** | 2h | ハーネス原則 |
 | 🔴 | LINE月次上限（6月1日リセット待ち） | — | 朝夕+エラーのみ稼働中 |
-| 🟡 | **FINスキルにP&L4ステップ処理フロー追加**（コンサル価値格上げ・最重要） | 2h | YouTube insight★ |
+| 🟡 | **FINスキルにP&L4ステップ処理フロー追加** | 2h | YouTube insight★ |
 | 🟡 | **MKT_PRタイムズ / SALES_PRタイムズ JSON Bodyエラー修正** | 1h | WFエラー継続中 |
 | 🟡 | OPS純青 Python実装（DEVチケット起票） | — | BUN_CEO最終仕様確認後 |
 
-### 🔴 来週（2026-05-29〜6/4）着手
-| 優先 | タスク | 工数 | 根拠 |
-|------|--------|------|------|
-| 🔴 | **月次3タスクのコントラクト設計**（OPS給与・FIN月次・RSCリサーチ） | 1.5h | Build Agents原則 |
-| 🟡 | **既存4スキルの3原則リファクタリング**（断言形式・CRITICAL冒頭化・重複排除） | 2h | スキル+MCP原則 |
-| 🟡 | **KENZAI向けCLAUDE.mdと競合調査スキル設計**（5スキル連鎖の第1ステップ） | 3h | YouTube insight★ |
+### 次セッション開始後すぐやること
+1. 全社ボードを最初に読む（7シート全て確認）
+2. COO_Context_20260522_MAIN.md と COO_Context_20260522_OPS.md の両方を読む
+3. 今週アクション着手：GitHubリポジトリ機密監査 → FINベリファイノード追加 → FINスキルP&L4ステップ追加
 
-### 🟢 来月以降（3ヶ月以内）
-| 優先 | タスク | 工数 |
-|------|--------|------|
-| 🟡 | 全社ボードにカンバンUX要素追加（Level3移行）| 2h |
-| 🟢 | PDF処理パイプライン（Gemini API）試験導入 | 4h |
-| 🟢 | FIN月次WFにGAN評価パターン試験導入 | 3h |
-| 🟢 | OPS純青実装時にops-skillの4層構造完全整備 | 月末以降 |
-| 🟡 | LINE自動化デモ WF認証エラー（l5snFeHnKr435xiL） | — |
-| 🟡 | KENZAI Mac自動適用スクリプト（workspace/生成済み） | — |
-| 🟡 | SALES Playwright実送信（骨格のみ） | — |
-| 🟢 | SNSマルチプラットフォーム展開（Instagram・note アカウント作成後） | — |
-| 🟢 | X自動投稿（Twitter Developer Account申請後） | — |
-| 🟢 | OPS仕様ヒアリング（信和・共生）| 後回し（BUN_CEO指示）|
+### インフラ・技術メモ（重要）
+- L3 DEVパイプライン✅正常：Python+Claude API方式（l3_agent.py）で稼働中
+- drive.js認証エラー時：別セッションでdrive.jsを一度実行→oauth_tokens.jsonが自動更新される
+- 共通OAuthWF稼働中：`http://localhost:5678/webhook/google-oauth-token`
+- n8n TZ=Asia/Tokyo（JST）：cronは JST値で設定
+- LINE月次上限：6月1日リセット。朝夕ブリーフィング+エラーアラートのみ稼働
+- VPS SSH：ssh root@162.43.78.67 | n8n: http://162.43.78.67:5678 | WF総数：25本
 
-### ✅ 解決済み（前回⚠️から変更）
-| タスク | 解決日 | 備考 |
-|--------|--------|------|
-| L3 DEVパイプライン | 2026-05-19 | Python+Claude API方式に移行・2026-05-22に正常稼働確認 |
-
----
-
-## Drive認証トラブルシューティング（2026-05-22追加）
-
+## Drive認証トラブルシューティング
 `drive.js`で`invalid_grant`エラーが出た場合：
 - 原因：`oauth_tokens.json`のrefresh_tokenが古い（revoked）
 - 対処：**別セッションでdrive.jsを一度実行**すると自動でトークンが更新される
-- 確認：`node drive.js search "test"` で認証テスト可能
 
----
-
-## 次セッションへの引き継ぎ（2026-05-22更新）
-
-### 最重要：次セッション開始後すぐやること
-1. **全社ボードを最初に読む**：7シート全て確認
-2. **今週アクション着手**：GitHubリポジトリ機密監査（30min）→ FINベリファイノード追加（2h）→ FINスキルP&L4ステップ追加（2h）の順
-
-### インフラ・技術メモ
-3. **L3 DEVパイプライン✅正常**：Python+Claude API方式（l3_agent.py）で稼働中。最終実行2026-05-20成功。
-4. **drive.js認証エラー時**：別セッションでdrive.jsを一度実行→oauth_tokens.jsonが自動更新される
-5. **共通OAuthWF稼働中**：`http://localhost:5678/webhook/google-oauth-token`
-6. **n8n TZ=Asia/Tokyo（JST）**：cronは全てJST値で設定
-7. **スケジュール確定（JST）**：MKT_PR 5:30 / SALES_PR 5:45 / RSC 6:00 / SALES日次 6:30 / 全社ボード 6:50 / 朝ブリーフィング 7:00 / 部門日次 18:45 / 夕リフレクション 19:00 / System QA 12:00
-8. **LINE月次上限**：6月1日リセット。朝夕ブリーフィング+エラーアラートのみ稼働
-9. **OAuth参照ルール**：`$('OAuthトークン取得').item.json.access_token`（IDではなく名前で参照）
-10. **n8n技術メモ**：Code node sandbox=fetch不可。HTTP Request v4 specifyBody:json+jsonBodyが正解
-11. VPS SSH：ssh root@162.43.78.67 | n8n: http://162.43.78.67:5678 | WF総数：25本
-12. **バックアップ体制**：GitHub日次（WF定義・3:00 JST）+ VPS SQLite日次（3:30 JST cron）
-
-### YouTube insightパイプライン状況
-13. `individual/`フォルダ：126本中15本分析完了（10本既分析+5本新規）・111本未分析
-14. 分析済みレポート：`northstar-os/reports/BIZ_YouTubeInsight統合分析レポート_20260522.md`
-15. 残り分析は必要に応じてバッチ処理可能（drive.js認証修正済み）
-
-### NS-OS成熟度（2026-05-22時点）
-16. **Level2→3移行中**：独自ループ✅・スロップ禁止✅・ガードレール✅・カンバンUX⚠️未完・コントラクト⚠️未設計
-17. **全WF一括バグ修正済み（2026-05-21）**: URL=prefix / JSON.stringify / LINE onError を全25WFで修正
-18. **System QA Phase 1実装済み**: エラートリガー + 診断・集約 + 重大時BUN_CEO報告
+## 部門Agent CLAUDE.md 作成順序（確定）
+1. DEV Agent → 完了（/root/.claude/CLAUDE.md）
+2. OPS Agent → OPS仕様ヒアリング完了後
+3. MKT/SALES Agent → MKT/SALES WF構築時
+4. FIN Agent → QA層整備時
