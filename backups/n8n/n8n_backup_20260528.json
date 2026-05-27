@@ -1,0 +1,3679 @@
+{
+  "exported": "2026-05-28 03:00:00 JST",
+  "total": 28,
+  "workflows": [
+    {
+      "id": "0XHdY5FAsuAkwtVW",
+      "name": "💰 APIコスト日次更新（毎日0:30 JST）",
+      "active": true,
+      "createdAt": "2026-05-18T21:55:12.403Z",
+      "updatedAt": "2026-05-23T04:42:13.781Z",
+      "nodes": [
+        {
+          "id": "ac-trigger",
+          "name": "日次スケジュール",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            200,
+            300
+          ]
+        },
+        {
+          "id": "ac-webhook",
+          "name": "手動Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            500
+          ]
+        },
+        {
+          "id": "ac-anthropic",
+          "name": "Anthropic使用量取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            420,
+            300
+          ]
+        },
+        {
+          "id": "ac-openai",
+          "name": "OpenAI使用量取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            420,
+            500
+          ]
+        },
+        {
+          "id": "ac-calc",
+          "name": "コスト計算・アラート判定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            640,
+            400
+          ]
+        },
+        {
+          "id": "ac-oauth",
+          "name": "Sheets OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            840,
+            400
+          ]
+        },
+        {
+          "id": "ac-prep",
+          "name": "シート更新データ準備",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1040,
+            400
+          ]
+        },
+        {
+          "id": "ac-sheets",
+          "name": "APIコストシート更新",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1240,
+            400
+          ]
+        },
+        {
+          "id": "ac-alert-check",
+          "name": "アラートがあるか？",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1440,
+            400
+          ]
+        },
+        {
+          "id": "ac-line",
+          "name": "LINE APIコスト通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1640,
+            280
+          ]
+        },
+        {
+          "id": "board-notify-0XHdY5FA",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        },
+        {
+          "id": "ac-deepseek",
+          "name": "DeepSeek使用量取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            420,
+            700
+          ]
+        },
+        {
+          "id": "ac-gemini",
+          "name": "Gemini使用量取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            420,
+            900
+          ]
+        }
+      ],
+      "nodeCount": 13
+    },
+    {
+      "id": "0zftWq8EAnbcJwrE",
+      "name": "毎週月曜BizDevスキャン",
+      "active": true,
+      "createdAt": "2026-05-07T22:01:15.636Z",
+      "updatedAt": "2026-05-23T05:37:45.251Z",
+      "nodes": [
+        {
+          "id": "sched",
+          "name": "週次スケジュール",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            0,
+            300
+          ]
+        },
+        {
+          "id": "date",
+          "name": "日付設定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            220,
+            300
+          ]
+        },
+        {
+          "id": "oauth",
+          "name": "ユーザーOAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            440,
+            300
+          ]
+        },
+        {
+          "id": "rsc_search",
+          "name": "最新RSCレポート検索",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            660,
+            300
+          ]
+        },
+        {
+          "id": "rsc_read",
+          "name": "RSCレポート読み込み",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            880,
+            300
+          ]
+        },
+        {
+          "id": "gemini_prompt",
+          "name": "Geminiプロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1100,
+            300
+          ]
+        },
+        {
+          "id": "gemini_scan",
+          "name": "Gemini市場スキャン",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1320,
+            300
+          ]
+        },
+        {
+          "id": "claude_prompt",
+          "name": "Claudeプロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1540,
+            300
+          ]
+        },
+        {
+          "id": "claude_judge",
+          "name": "Claude Opus事業判断",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1760,
+            300
+          ]
+        },
+        {
+          "id": "qa_prompt",
+          "name": "QAプロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1980,
+            300
+          ]
+        },
+        {
+          "id": "qa_check",
+          "name": "GPT-4o mini QA",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2200,
+            300
+          ]
+        },
+        {
+          "id": "report_gen",
+          "name": "BizDevレポート生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2420,
+            300
+          ]
+        },
+        {
+          "id": "biz_create",
+          "name": "BizDevファイル作成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2640,
+            300
+          ]
+        },
+        {
+          "id": "biz_upload",
+          "name": "BizDevコンテンツ保存",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2860,
+            300
+          ]
+        },
+        {
+          "id": "line_send",
+          "name": "LINE承認送信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3080,
+            300
+          ]
+        },
+        {
+          "id": "biz_sg",
+          "name": "BIZ_Signal行生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            3080,
+            480
+          ]
+        },
+        {
+          "id": "biz_so",
+          "name": "BIZ_Signal OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3300,
+            480
+          ]
+        },
+        {
+          "id": "BIZ_read",
+          "name": "BIZ_Signal DB読み込み",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3520,
+            480
+          ]
+        },
+        {
+          "id": "BIZ_append",
+          "name": "BIZ_Signal DB追記",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            3740,
+            480
+          ]
+        },
+        {
+          "id": "BIZ_save",
+          "name": "BIZ_Signal DB保存",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3960,
+            480
+          ]
+        },
+        {
+          "id": "artifact-0zftWq8E",
+          "name": "📦成果物管理追記",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            4160,
+            480
+          ]
+        },
+        {
+          "id": "backup-webhook-0zftWq8E",
+          "name": "バックアップWebhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            600
+          ]
+        },
+        {
+          "id": "board-notify-0zftWq8E",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 23
+    },
+    {
+      "id": "4LTj5vfwCcDqVUKc",
+      "name": "毎夕18:45 部門日次報告集約",
+      "active": true,
+      "createdAt": "2026-05-07T22:25:45.017Z",
+      "updatedAt": "2026-05-21T14:07:21.342Z",
+      "nodes": [
+        {
+          "id": "sch",
+          "name": "夕方報告スケジュール",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            0,
+            300
+          ]
+        },
+        {
+          "id": "date",
+          "name": "日付設定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            220,
+            300
+          ]
+        },
+        {
+          "id": "oauth",
+          "name": "ユーザーOAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            440,
+            300
+          ]
+        },
+        {
+          "id": "rsc_s",
+          "name": "RSC今日ファイル検索",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            660,
+            200
+          ]
+        },
+        {
+          "id": "biz_s",
+          "name": "BizDev今日ファイル検索",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            660,
+            400
+          ]
+        },
+        {
+          "id": "sig",
+          "name": "Signal DB今日",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            880,
+            300
+          ]
+        },
+        {
+          "id": "prompt",
+          "name": "報告プロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1100,
+            300
+          ]
+        },
+        {
+          "id": "gemini",
+          "name": "Gemini集約",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1320,
+            300
+          ]
+        },
+        {
+          "id": "fmt",
+          "name": "報告整形",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1540,
+            300
+          ]
+        },
+        {
+          "id": "create",
+          "name": "Driveファイル作成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1760,
+            300
+          ]
+        },
+        {
+          "id": "upload",
+          "name": "Driveコンテンツ保存",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1980,
+            300
+          ]
+        },
+        {
+          "id": "line",
+          "name": "LINE日次報告送信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2200,
+            300
+          ]
+        },
+        {
+          "id": "backup-webhook-4LTj5vfw",
+          "name": "バックアップWebhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            600
+          ]
+        },
+        {
+          "id": "board-notify-4LTj5vfw",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 14
+    },
+    {
+      "id": "796EUn4zvboKFQiP",
+      "name": "朝6:00 RSCリサーチ巡回",
+      "active": true,
+      "createdAt": "2026-05-07T21:47:12.264Z",
+      "updatedAt": "2026-05-23T05:37:34.876Z",
+      "nodes": [
+        {
+          "id": "sched",
+          "name": "朝6時スケジュール",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            0,
+            300
+          ]
+        },
+        {
+          "id": "date",
+          "name": "日付設定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            220,
+            300
+          ]
+        },
+        {
+          "id": "oauth",
+          "name": "ユーザーOAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            440,
+            300
+          ]
+        },
+        {
+          "id": "h1",
+          "name": "HTML_福岡県庁",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            660,
+            300
+          ]
+        },
+        {
+          "id": "h2",
+          "name": "HTML_熊本県庁",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            880,
+            300
+          ]
+        },
+        {
+          "id": "h3",
+          "name": "HTML_厚労省障害",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1100,
+            300
+          ]
+        },
+        {
+          "id": "h4",
+          "name": "HTML_厚労省介護",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1320,
+            300
+          ]
+        },
+        {
+          "id": "h5",
+          "name": "HTML_WAMNET障害",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1540,
+            300
+          ]
+        },
+        {
+          "id": "h6",
+          "name": "HTML_WAMNET介護",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1760,
+            300
+          ]
+        },
+        {
+          "id": "h7",
+          "name": "HTML_AIトレンド",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1980,
+            300
+          ]
+        },
+        {
+          "id": "prompt",
+          "name": "RSCプロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2200,
+            300
+          ]
+        },
+        {
+          "id": "gemini",
+          "name": "Gemini RSC解析",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2420,
+            300
+          ]
+        },
+        {
+          "id": "report",
+          "name": "RSCレポート整形",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2640,
+            300
+          ]
+        },
+        {
+          "id": "rsc_create",
+          "name": "RSCファイル作成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2860,
+            300
+          ]
+        },
+        {
+          "id": "rsc_upload",
+          "name": "RSCコンテンツ保存",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3080,
+            300
+          ]
+        },
+        {
+          "id": "dash_search",
+          "name": "Dashboard検索",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3300,
+            300
+          ]
+        },
+        {
+          "id": "dash_read",
+          "name": "Dashboard読み込み",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3520,
+            300
+          ]
+        },
+        {
+          "id": "dash_gen",
+          "name": "Dashboard Section4更新生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            3740,
+            300
+          ]
+        },
+        {
+          "id": "dash_save",
+          "name": "Dashboard更新",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3960,
+            300
+          ]
+        },
+        {
+          "id": "rsc_sg",
+          "name": "RSC_Signal行生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            3080,
+            480
+          ]
+        },
+        {
+          "id": "rsc_so",
+          "name": "RSC_Signal OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3300,
+            480
+          ]
+        },
+        {
+          "id": "RSC_read",
+          "name": "RSC_Signal DB読み込み",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3520,
+            480
+          ]
+        },
+        {
+          "id": "RSC_append",
+          "name": "RSC_Signal DB追記",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            3740,
+            480
+          ]
+        },
+        {
+          "id": "RSC_save",
+          "name": "RSC_Signal DB保存",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3960,
+            480
+          ]
+        },
+        {
+          "id": "rsc_line_send",
+          "name": "RSC LINE送信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2400,
+            120
+          ]
+        },
+        {
+          "id": "rsc-manual-webhook",
+          "name": "手動トリガー（一時）",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            500
+          ]
+        },
+        {
+          "id": "artifact-796EUn4z",
+          "name": "📦成果物管理追記",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            4160,
+            500
+          ]
+        },
+        {
+          "id": "board-notify-796EUn4z",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        },
+        {
+          "id": "rsc_qa_prompt",
+          "name": "RSC QAプロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2200,
+            300
+          ]
+        },
+        {
+          "id": "rsc_qa_check",
+          "name": "GPT-4o mini QA",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2420,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 30
+    },
+    {
+      "id": "9AjBftcINoGx7CNH",
+      "name": "YouTube API テスト（動作確認用）",
+      "active": false,
+      "createdAt": "2026-05-22T22:51:55.907Z",
+      "updatedAt": "2026-05-22T22:51:55.907Z",
+      "nodes": [
+        {
+          "id": "trigger-001",
+          "name": "Manual Trigger",
+          "type": "n8n-nodes-base.manualTrigger",
+          "position": [
+            240,
+            300
+          ]
+        },
+        {
+          "id": "http-001",
+          "name": "YouTube Search",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            460,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 2
+    },
+    {
+      "id": "BedSFIsmWUmtqUrm",
+      "name": "LINE ユーザーID取得",
+      "active": true,
+      "createdAt": "2026-05-04T02:30:50.574Z",
+      "updatedAt": "2026-05-04T02:36:01.469Z",
+      "nodes": [
+        {
+          "id": "d51fed11-42d9-40c3-8858-78231251d910",
+          "name": "Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            0,
+            0
+          ]
+        }
+      ],
+      "nodeCount": 1
+    },
+    {
+      "id": "Eu3kQaH8vQpJmyqd",
+      "name": "🔑 共通GoogleOAuthトークン（全WF参照用）",
+      "active": true,
+      "createdAt": "2026-05-20T03:21:50.833Z",
+      "updatedAt": "2026-05-20T03:24:19.698Z",
+      "nodes": [
+        {
+          "id": "co-webhook",
+          "name": "トークン取得Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            300
+          ]
+        },
+        {
+          "id": "co-oauth",
+          "name": "Googleトークン発行",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            420,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 2
+    },
+    {
+      "id": "NjmKR3rlzaAdznoB",
+      "name": "朝7:00ブリーフィング",
+      "active": true,
+      "createdAt": "2026-05-07T02:08:04.305Z",
+      "updatedAt": "2026-05-23T05:37:33.415Z",
+      "nodes": [
+        {
+          "id": "schedule",
+          "name": "毎朝7時トリガー",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            0,
+            300
+          ]
+        },
+        {
+          "id": "set_date",
+          "name": "日付設定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            200,
+            300
+          ]
+        },
+        {
+          "id": "gen_jwt",
+          "name": "JWT生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            400,
+            300
+          ]
+        },
+        {
+          "id": "get_token",
+          "name": "OAuthトークン交換",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            620,
+            300
+          ]
+        },
+        {
+          "id": "merge_token",
+          "name": "日付とトークン統合",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            840,
+            300
+          ]
+        },
+        {
+          "id": "get_calendar",
+          "name": "メインカレンダー取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1280,
+            180
+          ]
+        },
+        {
+          "id": "get_tasks",
+          "name": "BUN_CEOタスク取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1280,
+            440
+          ]
+        },
+        {
+          "id": "get_board",
+          "name": "全社ボード読み込み",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1060,
+            300
+          ]
+        },
+        {
+          "id": "build_prompt",
+          "name": "プロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1500,
+            300
+          ]
+        },
+        {
+          "id": "line_success",
+          "name": "LINE送信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2160,
+            180
+          ]
+        },
+        {
+          "id": "dash_gen",
+          "name": "ダッシュボード生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1700,
+            300
+          ]
+        },
+        {
+          "id": "user_oauth",
+          "name": "ユーザーOAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1920,
+            300
+          ]
+        },
+        {
+          "id": "drive_check",
+          "name": "Drive既存確認",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2140,
+            300
+          ]
+        },
+        {
+          "id": "dash_if",
+          "name": "Dashboard存在確認",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            2360,
+            300
+          ]
+        },
+        {
+          "id": "drive_create",
+          "name": "Driveファイル作成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2580,
+            440
+          ]
+        },
+        {
+          "id": "drive_upload",
+          "name": "Driveコンテンツ更新",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2800,
+            440
+          ]
+        },
+        {
+          "id": "artifact-NjmKR3rl",
+          "name": "📦成果物管理追記",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3000,
+            440
+          ]
+        },
+        {
+          "id": "board-notify-NjmKR3rl",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        },
+        {
+          "id": "manual-webhook-trigger",
+          "name": "手動実行Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            0,
+            100
+          ]
+        }
+      ],
+      "nodeCount": 19
+    },
+    {
+      "id": "PAlz3XfDYycQA48D",
+      "name": "n8n自動バックアップ",
+      "active": true,
+      "createdAt": "2026-05-07T22:25:44.871Z",
+      "updatedAt": "2026-05-23T00:04:06.454Z",
+      "nodes": [
+        {
+          "id": "gh-commit",
+          "name": "GitHub commit",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            900,
+            300
+          ]
+        },
+        {
+          "id": "sch",
+          "name": "バックアップスケジュール",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            0,
+            300
+          ]
+        },
+        {
+          "id": "date",
+          "name": "日付設定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            220,
+            300
+          ]
+        },
+        {
+          "id": "oauth",
+          "name": "ユーザーOAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            440,
+            300
+          ]
+        },
+        {
+          "id": "fetch",
+          "name": "ワークフロー一覧取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            660,
+            300
+          ]
+        },
+        {
+          "id": "fmt",
+          "name": "バックアップ生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            880,
+            300
+          ]
+        },
+        {
+          "id": "create",
+          "name": "Driveファイル作成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1100,
+            300
+          ]
+        },
+        {
+          "id": "upload",
+          "name": "Driveコンテンツ保存",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1320,
+            300
+          ]
+        },
+        {
+          "id": "manual-webhook-trigger",
+          "name": "手動実行Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            100,
+            600
+          ]
+        },
+        {
+          "id": "backup-board-notify",
+          "name": "バックアップ完了通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1200,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 10
+    },
+    {
+      "id": "RAtN2vX8tMOfHJ5G",
+      "name": "DEV QA レビュー（DeepSeek）",
+      "active": true,
+      "createdAt": "2026-05-15T03:34:10.472Z",
+      "updatedAt": "2026-05-23T05:37:40.852Z",
+      "nodes": [
+        {
+          "id": "dq-webhook",
+          "name": "DEV QA Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            300
+          ]
+        },
+        {
+          "id": "dq-parse",
+          "name": "審査コード取得",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            420,
+            300
+          ]
+        },
+        {
+          "id": "dq-deepseek",
+          "name": "DeepSeek QA実行",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            640,
+            300
+          ]
+        },
+        {
+          "id": "dq-judge",
+          "name": "QA結果解析",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            860,
+            300
+          ]
+        },
+        {
+          "id": "dq-notify",
+          "name": "QA結果LINE通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1080,
+            300
+          ]
+        },
+        {
+          "id": "dq-response",
+          "name": "Webhook応答",
+          "type": "n8n-nodes-base.respondToWebhook",
+          "position": [
+            1300,
+            300
+          ]
+        },
+        {
+          "id": "dq-oauth",
+          "name": "Sheets OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1200,
+            450
+          ]
+        },
+        {
+          "id": "dq-save-prep",
+          "name": "Drive保存準備（成果物整形）",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1400,
+            450
+          ]
+        },
+        {
+          "id": "dq-drive-meta",
+          "name": "Drive_メタデータ作成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1600,
+            450
+          ]
+        },
+        {
+          "id": "dq-drive-content",
+          "name": "Drive_コンテンツアップロード",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1800,
+            450
+          ]
+        },
+        {
+          "id": "dq-sheets",
+          "name": "📦成果物管理追記",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2000,
+            450
+          ]
+        }
+      ],
+      "nodeCount": 11
+    },
+    {
+      "id": "Ru1FfTgXk6YWczjk",
+      "name": "SALES_PRタイムズ自動営業スキャン",
+      "active": true,
+      "createdAt": "2026-05-17T21:28:28.959Z",
+      "updatedAt": "2026-05-23T05:37:38.457Z",
+      "nodes": [
+        {
+          "id": "node_schedule",
+          "name": "毎朝5:45起動",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            240,
+            300
+          ]
+        },
+        {
+          "id": "node_fetch",
+          "name": "PRタイムズSitemapXML取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            460,
+            300
+          ]
+        },
+        {
+          "id": "node_parse",
+          "name": "XML解析・24hフィルタ",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            680,
+            300
+          ]
+        },
+        {
+          "id": "node_aggregate",
+          "name": "全件集約",
+          "type": "n8n-nodes-base.aggregate",
+          "position": [
+            900,
+            300
+          ]
+        },
+        {
+          "id": "node_prompt",
+          "name": "Claudeプロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1120,
+            300
+          ]
+        },
+        {
+          "id": "node_claude",
+          "name": "Claude Sonnet スコアリング",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1340,
+            300
+          ]
+        },
+        {
+          "id": "node_parse_scores",
+          "name": "スコア解析・LINE生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1560,
+            300
+          ]
+        },
+        {
+          "id": "node_sheets_format",
+          "name": "SALES台帳追記",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1780,
+            300
+          ]
+        },
+        {
+          "id": "node_sheets_api",
+          "name": "Sheets API追記",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2000,
+            300
+          ]
+        },
+        {
+          "id": "node_line",
+          "name": "LINE通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2220,
+            300
+          ]
+        },
+        {
+          "id": "sales-manual-webhook",
+          "name": "手動実行Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            0,
+            100
+          ]
+        },
+        {
+          "id": "sales-qa-prompt-gen",
+          "name": "SALES QAプロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1420,
+            150
+          ]
+        },
+        {
+          "id": "sales-qa-api",
+          "name": "SALES GPT-4o mini QA",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1620,
+            150
+          ]
+        },
+        {
+          "id": "sales-qa-decide",
+          "name": "SALES QA判定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1820,
+            150
+          ]
+        }
+      ],
+      "nodeCount": 14
+    },
+    {
+      "id": "Ury2oteVKpcHBI8m",
+      "name": "LINEコマンド処理",
+      "active": true,
+      "createdAt": "2026-05-07T04:43:18.657Z",
+      "updatedAt": "2026-05-23T05:07:59.202Z",
+      "nodes": [
+        {
+          "id": "webhook",
+          "name": "LINEウェブフック",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            0,
+            300
+          ]
+        },
+        {
+          "id": "parse",
+          "name": "メッセージ解析",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            220,
+            300
+          ]
+        },
+        {
+          "id": "jwt",
+          "name": "JWT生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            440,
+            300
+          ]
+        },
+        {
+          "id": "token",
+          "name": "OAuthトークン交換",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            660,
+            300
+          ]
+        },
+        {
+          "id": "merge",
+          "name": "データ統合",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            880,
+            300
+          ]
+        },
+        {
+          "id": "if_task",
+          "name": "タスクか否か",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1100,
+            300
+          ]
+        },
+        {
+          "id": "add_task",
+          "name": "タスク追加",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1320,
+            160
+          ]
+        },
+        {
+          "id": "reply_task",
+          "name": "LINE返信（タスク完了）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1540,
+            160
+          ]
+        },
+        {
+          "id": "if_event",
+          "name": "予定か否か",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1320,
+            440
+          ]
+        },
+        {
+          "id": "add_event",
+          "name": "予定追加",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1540,
+            360
+          ]
+        },
+        {
+          "id": "reply_event",
+          "name": "LINE返信（予定完了）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1760,
+            360
+          ]
+        },
+        {
+          "id": "reply_help",
+          "name": "LINE返信（ヘルプ）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1540,
+            560
+          ]
+        },
+        {
+          "id": "sg_prompt",
+          "name": "Gemini Signalプロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1100,
+            520
+          ]
+        },
+        {
+          "id": "sg_gemini",
+          "name": "Gemini Signal判定",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1320,
+            520
+          ]
+        },
+        {
+          "id": "sg_row",
+          "name": "Signal行生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1540,
+            520
+          ]
+        },
+        {
+          "id": "sg_if",
+          "name": "Signal関連性確認",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1760,
+            520
+          ]
+        },
+        {
+          "id": "sg_oauth",
+          "name": "Signal OAuth取得2",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1980,
+            440
+          ]
+        },
+        {
+          "id": "sg_read",
+          "name": "Signal DB読み込み2",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2200,
+            440
+          ]
+        },
+        {
+          "id": "sg_append",
+          "name": "Signal DB追記",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2420,
+            440
+          ]
+        },
+        {
+          "id": "sg_save",
+          "name": "Signal DB保存2",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2640,
+            440
+          ]
+        },
+        {
+          "id": "apv_if",
+          "name": "承認か否か",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1320,
+            460
+          ]
+        },
+        {
+          "id": "apv_yes",
+          "name": "LINE返信（承認済み）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1540,
+            380
+          ]
+        },
+        {
+          "id": "rej_if",
+          "name": "却下か否か",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1540,
+            560
+          ]
+        },
+        {
+          "id": "rej_yes",
+          "name": "LINE返信（却下済み）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1760,
+            480
+          ]
+        },
+        {
+          "id": "strat_if",
+          "name": "戦略評価か否か",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1760,
+            580
+          ]
+        },
+        {
+          "id": "strat_p",
+          "name": "戦略評価プロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1980,
+            500
+          ]
+        },
+        {
+          "id": "strat_c",
+          "name": "Claude Opus戦略評価",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2200,
+            500
+          ]
+        },
+        {
+          "id": "strat_oauth",
+          "name": "戦略評価OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2420,
+            500
+          ]
+        },
+        {
+          "id": "strat_fmt",
+          "name": "戦略評価レポート生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2640,
+            500
+          ]
+        },
+        {
+          "id": "strat_cr",
+          "name": "StrategyファイルSave",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2860,
+            500
+          ]
+        },
+        {
+          "id": "strat_up",
+          "name": "Strategyコンテンツ保存",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3080,
+            500
+          ]
+        },
+        {
+          "id": "strat_line",
+          "name": "LINE戦略評価返信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3300,
+            500
+          ]
+        },
+        {
+          "id": "ns_task_if",
+          "name": "NS_タスクか否か",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1100,
+            660
+          ]
+        },
+        {
+          "id": "ns_task_add",
+          "name": "NSタスク追加",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1320,
+            580
+          ]
+        },
+        {
+          "id": "ns_task_reply",
+          "name": "LINE返信（NSタスク）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1540,
+            580
+          ]
+        },
+        {
+          "id": "ns_sched_if",
+          "name": "NS_予定か否か",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1100,
+            760
+          ]
+        },
+        {
+          "id": "ns_sched_add",
+          "name": "NS予定追加",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1320,
+            700
+          ]
+        },
+        {
+          "id": "ns_sched_reply",
+          "name": "LINE返信（NS予定）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1540,
+            700
+          ]
+        },
+        {
+          "id": "ns_comp_if",
+          "name": "NS_完了か否か",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1100,
+            860
+          ]
+        },
+        {
+          "id": "ns_search",
+          "name": "NSタスク検索",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1320,
+            820
+          ]
+        },
+        {
+          "id": "ns_comp_proc",
+          "name": "NS完了処理",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1540,
+            820
+          ]
+        },
+        {
+          "id": "ns_comp_update",
+          "name": "NSイベント完了更新",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1760,
+            820
+          ]
+        },
+        {
+          "id": "ns_comp_reply",
+          "name": "LINE返信（NS完了）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1980,
+            820
+          ]
+        },
+        {
+          "id": "kenzai_if",
+          "name": "給与計算か否か",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1540,
+            700
+          ]
+        },
+        {
+          "id": "kenzai_exec",
+          "name": "KENZAI実行",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1760,
+            620
+          ]
+        },
+        {
+          "id": "kenzai_reply",
+          "name": "LINE返信（KENZAI受付）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1980,
+            620
+          ]
+        }
+      ],
+      "nodeCount": 46
+    },
+    {
+      "id": "VD4QeU4XVfhqmMbl",
+      "name": "夕19:00リフレクション",
+      "active": true,
+      "createdAt": "2026-05-07T16:02:03.469Z",
+      "updatedAt": "2026-05-23T04:05:31.157Z",
+      "nodes": [
+        {
+          "id": "schedule",
+          "name": "夕方スケジュール",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            0,
+            300
+          ]
+        },
+        {
+          "id": "set_date",
+          "name": "日付設定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            220,
+            300
+          ]
+        },
+        {
+          "id": "sa_jwt",
+          "name": "SA_JWT生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            440,
+            300
+          ]
+        },
+        {
+          "id": "sa_token",
+          "name": "SA_OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            660,
+            300
+          ]
+        },
+        {
+          "id": "get_events",
+          "name": "今日の予定取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            880,
+            300
+          ]
+        },
+        {
+          "id": "get_tasks",
+          "name": "今日のタスク取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1100,
+            300
+          ]
+        },
+        {
+          "id": "user_oauth",
+          "name": "ユーザーOAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1320,
+            300
+          ]
+        },
+        {
+          "id": "dash_search",
+          "name": "Dashboard検索",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1540,
+            300
+          ]
+        },
+        {
+          "id": "dash_read",
+          "name": "Dashboard読み込み",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1760,
+            300
+          ]
+        },
+        {
+          "id": "reflection",
+          "name": "リフレクション生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1980,
+            300
+          ]
+        },
+        {
+          "id": "drive_update",
+          "name": "Drive更新",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2200,
+            300
+          ]
+        },
+        {
+          "id": "line_send",
+          "name": "LINE送信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2420,
+            300
+          ]
+        },
+        {
+          "id": "artifact-VD4QeU4X",
+          "name": "📦成果物管理追記",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2620,
+            300
+          ]
+        },
+        {
+          "id": "board-notify-VD4QeU4X",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 14
+    },
+    {
+      "id": "VOR8Hbpt8FYEtmIp",
+      "name": "🚨 n8nエラーアラート（全社共通）",
+      "active": true,
+      "createdAt": "2026-05-16T14:05:09.680Z",
+      "updatedAt": "2026-05-23T04:34:13.162Z",
+      "nodes": [
+        {
+          "id": "ea-trigger",
+          "name": "エラートリガー",
+          "type": "n8n-nodes-base.errorTrigger",
+          "position": [
+            200,
+            300
+          ]
+        },
+        {
+          "id": "ea-format",
+          "name": "アラートメッセージ生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            420,
+            300
+          ]
+        },
+        {
+          "id": "ea-dedup",
+          "name": "重複チェック（5分以内は送信スキップ）",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            640,
+            200
+          ]
+        },
+        {
+          "id": "ea-dedup-if",
+          "name": "LINE送信OK？",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            860,
+            200
+          ]
+        },
+        {
+          "id": "ea-line",
+          "name": "LINEアラート送信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            640,
+            300
+          ]
+        },
+        {
+          "id": "ea-backup-trigger",
+          "name": "バックアップ実行判定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            600,
+            300
+          ]
+        },
+        {
+          "id": "ea-backup-check",
+          "name": "バックアップ必要か？",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            800,
+            300
+          ]
+        },
+        {
+          "id": "ea-backup-call",
+          "name": "バックアップWebhook呼び出し",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1000,
+            200
+          ]
+        },
+        {
+          "id": "err-oauth",
+          "name": "エラーアラート用OAuth",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1200,
+            300
+          ]
+        },
+        {
+          "id": "err-board",
+          "name": "エラー内容を全社ボードに記録",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1400,
+            300
+          ]
+        },
+        {
+          "id": "sysqa-kick",
+          "name": "System QAキック",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1100,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 11
+    },
+    {
+      "id": "YGacVsIyaf43mfG2",
+      "name": "MKT_SNSコンテンツ自動生成（GaryV×Hormozi）",
+      "active": true,
+      "createdAt": "2026-05-18T00:12:17.479Z",
+      "updatedAt": "2026-05-23T04:05:31.841Z",
+      "nodes": [
+        {
+          "id": "node_schedule",
+          "name": "週3回スケジュール（月水金7:00）",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            240,
+            300
+          ]
+        },
+        {
+          "id": "node_rsc",
+          "name": "RSC最新レポート取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            460,
+            300
+          ]
+        },
+        {
+          "id": "node_prompt",
+          "name": "コンテンツプロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            680,
+            300
+          ]
+        },
+        {
+          "id": "node_claude",
+          "name": "Claude Sonnet コンテンツ生成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            900,
+            300
+          ]
+        },
+        {
+          "id": "node_format",
+          "name": "コンテンツ整形・LINE通知生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1120,
+            300
+          ]
+        },
+        {
+          "id": "node_drive",
+          "name": "Drive下書き保存",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1340,
+            300
+          ]
+        },
+        {
+          "id": "node_line",
+          "name": "LINE通知（BUN_CEO確認依頼）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1560,
+            300
+          ]
+        },
+        {
+          "id": "sns-drive-oauth",
+          "name": "SNS Drive OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1200,
+            300
+          ]
+        },
+        {
+          "id": "artifact-YGacVsIy",
+          "name": "📦成果物管理追記",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1760,
+            300
+          ]
+        },
+        {
+          "id": "board-notify-YGacVsIy",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        },
+        {
+          "id": "manual-webhook-trigger",
+          "name": "手動実行Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            100,
+            600
+          ]
+        }
+      ],
+      "nodeCount": 11
+    },
+    {
+      "id": "dSItw958pDfl3fMs",
+      "name": "🔍 System QA 夜間メンテナンス（GPT-4o mini）",
+      "active": true,
+      "createdAt": "2026-05-17T01:13:21.148Z",
+      "updatedAt": "2026-05-23T05:37:42.368Z",
+      "nodes": [
+        {
+          "id": "sq-trigger",
+          "name": "夜間スケジュール（21:00 JST）",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            200,
+            300
+          ]
+        },
+        {
+          "id": "sq-date",
+          "name": "日付・基準値設定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            420,
+            300
+          ]
+        },
+        {
+          "id": "sq-get-executions",
+          "name": "n8n実行ログ取得（24h）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            640,
+            200
+          ]
+        },
+        {
+          "id": "sq-get-workflows",
+          "name": "全ワークフロー状態取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            640,
+            400
+          ]
+        },
+        {
+          "id": "sq-tier1",
+          "name": "Tier1: ルールベース分析・自律修復",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            880,
+            300
+          ]
+        },
+        {
+          "id": "sq-needs-tier2",
+          "name": "Tier2が必要か？",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1100,
+            300
+          ]
+        },
+        {
+          "id": "sq-tier2",
+          "name": "Tier2: GPT-4o mini System QA診断",
+          "type": "n8n-nodes-base.openAi",
+          "position": [
+            1320,
+            180
+          ]
+        },
+        {
+          "id": "sq-merge",
+          "name": "診断結果統合",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1540,
+            300
+          ]
+        },
+        {
+          "id": "sq-line",
+          "name": "LINE夜間レポート送信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1760,
+            300
+          ]
+        },
+        {
+          "id": "sq-handoff",
+          "name": "ai_handoff.md更新",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1980,
+            300
+          ]
+        },
+        {
+          "id": "sq-sheets",
+          "name": "稼働ログ記録",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1980,
+            460
+          ]
+        },
+        {
+          "id": "sq-token",
+          "name": "OAuthトークン取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            420,
+            480
+          ]
+        },
+        {
+          "id": "board-notify-dSItw958",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        },
+        {
+          "id": "sysqa-manual-webhook",
+          "name": "手動実行Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            0,
+            100
+          ]
+        },
+        {
+          "id": "error-trigger-webhook",
+          "name": "エラートリガーWebhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            700
+          ]
+        },
+        {
+          "id": "error-oauth",
+          "name": "エラーアラート用OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            440,
+            840
+          ]
+        },
+        {
+          "id": "error-diagnosis",
+          "name": "エラー診断・集約",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            440,
+            700
+          ]
+        },
+        {
+          "id": "escalate-check",
+          "name": "エスカレーション必要？",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            700,
+            700
+          ]
+        },
+        {
+          "id": "line-escalation",
+          "name": "BUN_CEOへLINE診断報告",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            960,
+            600
+          ]
+        },
+        {
+          "id": "board-error-log",
+          "name": "全社ボードエラーキュー記録",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            960,
+            800
+          ]
+        },
+        {
+          "id": "sq-save-prep",
+          "name": "Drive保存準備（成果物整形）",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            620,
+            480
+          ]
+        },
+        {
+          "id": "sq-drive-meta",
+          "name": "Drive_メタデータ作成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            820,
+            480
+          ]
+        },
+        {
+          "id": "sq-drive-content",
+          "name": "Drive_コンテンツアップロード",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1020,
+            480
+          ]
+        },
+        {
+          "id": "sq-artifact-append",
+          "name": "📦成果物管理追記",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1220,
+            480
+          ]
+        }
+      ],
+      "nodeCount": 24
+    },
+    {
+      "id": "fD9GsbAuRUVqBRaV",
+      "name": "KENZAI完了通知",
+      "active": true,
+      "createdAt": "2026-05-21T17:54:04.687Z",
+      "updatedAt": "2026-05-21T17:54:04.687Z",
+      "nodes": [
+        {
+          "id": "webhook_trigger",
+          "name": "KENZAI完了Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            240,
+            300
+          ]
+        },
+        {
+          "id": "build_message",
+          "name": "メッセージ構築",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            460,
+            300
+          ]
+        },
+        {
+          "id": "oauth_token",
+          "name": "OAuthトークン取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            680,
+            300
+          ]
+        },
+        {
+          "id": "line_push",
+          "name": "LINE PUSH通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            900,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 4
+    },
+    {
+      "id": "gpNUh8kwMI2BSvSe",
+      "name": "DEV QA レビュー（DeepSeek）",
+      "active": false,
+      "createdAt": "2026-05-14T22:11:25.196Z",
+      "updatedAt": "2026-05-21T07:26:16.533Z",
+      "nodes": [
+        {
+          "id": "dq-webhook",
+          "name": "DEV QA Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            300
+          ]
+        },
+        {
+          "id": "dq-parse",
+          "name": "審査コード取得",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            420,
+            300
+          ]
+        },
+        {
+          "id": "dq-deepseek",
+          "name": "DeepSeek QA実行",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            640,
+            300
+          ]
+        },
+        {
+          "id": "dq-judge",
+          "name": "QA結果解析",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            860,
+            300
+          ]
+        },
+        {
+          "id": "dq-notify",
+          "name": "QA結果をLINE通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1080,
+            300
+          ]
+        },
+        {
+          "id": "dq-response",
+          "name": "Webhook応答返却",
+          "type": "n8n-nodes-base.respondToWebhook",
+          "position": [
+            1300,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 6
+    },
+    {
+      "id": "ht60IBCItF9vt1vO",
+      "name": "MKT_PRタイムズ4専門人格エージェント",
+      "active": true,
+      "createdAt": "2026-05-18T01:28:33.213Z",
+      "updatedAt": "2026-05-23T05:37:39.874Z",
+      "nodes": [
+        {
+          "id": "node_schedule",
+          "name": "毎朝5:30起動",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            240,
+            300
+          ]
+        },
+        {
+          "id": "node_fetch",
+          "name": "PRタイムズSitemapXML取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            460,
+            300
+          ]
+        },
+        {
+          "id": "node_parse",
+          "name": "XML解析・24hフィルタ",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            680,
+            300
+          ]
+        },
+        {
+          "id": "node_aggregate",
+          "name": "全件集約",
+          "type": "n8n-nodes-base.aggregate",
+          "position": [
+            900,
+            300
+          ]
+        },
+        {
+          "id": "node_jay_prompt",
+          "name": "Jay Abraham Agent（市場機会発見）",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1120,
+            300
+          ]
+        },
+        {
+          "id": "node_jay_api",
+          "name": "Jay Abraham API",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1340,
+            300
+          ]
+        },
+        {
+          "id": "node_hormozi_prompt",
+          "name": "Hormozi Agent（オファー設計）",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1560,
+            300
+          ]
+        },
+        {
+          "id": "node_hormozi_api",
+          "name": "Hormozi API",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1780,
+            300
+          ]
+        },
+        {
+          "id": "node_kennedy_prompt",
+          "name": "Dan Kennedy Agent（アウトリーチ文案）",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2000,
+            300
+          ]
+        },
+        {
+          "id": "node_kennedy_api",
+          "name": "Dan Kennedy API",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2220,
+            300
+          ]
+        },
+        {
+          "id": "node_qa_prompt",
+          "name": "GPT-4o QA Agent（品質チェック）",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2440,
+            300
+          ]
+        },
+        {
+          "id": "node_qa_api",
+          "name": "GPT-4o QA API",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2660,
+            300
+          ]
+        },
+        {
+          "id": "node_sheets_format",
+          "name": "SALES台帳追記",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2880,
+            300
+          ]
+        },
+        {
+          "id": "sheets-oauth-mkt",
+          "name": "Sheets OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3000,
+            300
+          ]
+        },
+        {
+          "id": "node_sheets",
+          "name": "Sheets API追記",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3100,
+            300
+          ]
+        },
+        {
+          "id": "node_line",
+          "name": "LINE通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3320,
+            300
+          ]
+        },
+        {
+          "id": "mkt-save-prep",
+          "name": "Drive保存準備（成果物整形）",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2600,
+            300
+          ]
+        },
+        {
+          "id": "mkt-drive-oauth",
+          "name": "Drive OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2800,
+            300
+          ]
+        },
+        {
+          "id": "artifact-ht60IBCI",
+          "name": "📦成果物管理追記",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3520,
+            300
+          ]
+        },
+        {
+          "id": "backup-webhook-ht60IBCI",
+          "name": "バックアップWebhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            600
+          ]
+        },
+        {
+          "id": "board-notify-ht60IBCI",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        },
+        {
+          "id": "mkt-drive-meta-create",
+          "name": "Drive_メタデータ作成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3000,
+            300
+          ]
+        },
+        {
+          "id": "mkt-drive-content-upload",
+          "name": "Drive_コンテンツアップロード",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3250,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 23
+    },
+    {
+      "id": "l5snFeHnKr435xiL",
+      "name": "LINE自動化サービス - クライアント向けデモ",
+      "active": true,
+      "createdAt": "2026-05-14T14:47:41.732Z",
+      "updatedAt": "2026-05-21T07:26:17.463Z",
+      "nodes": [
+        {
+          "id": "ld-webhook",
+          "name": "LINE Webhook受信",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            300
+          ]
+        },
+        {
+          "id": "ld-parse",
+          "name": "イベント解析",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            420,
+            300
+          ]
+        },
+        {
+          "id": "ld-event-switch",
+          "name": "イベント種別分岐",
+          "type": "n8n-nodes-base.switch",
+          "position": [
+            640,
+            300
+          ]
+        },
+        {
+          "id": "ld-welcome",
+          "name": "ウェルカムメッセージ送信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            860,
+            140
+          ]
+        },
+        {
+          "id": "ld-keyword",
+          "name": "キーワード分岐",
+          "type": "n8n-nodes-base.switch",
+          "position": [
+            860,
+            380
+          ]
+        },
+        {
+          "id": "ld-reply-price",
+          "name": "料金案内を返信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1080,
+            240
+          ]
+        },
+        {
+          "id": "ld-reply-consult",
+          "name": "相談フォームを返信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1080,
+            380
+          ]
+        },
+        {
+          "id": "ld-reply-hours",
+          "name": "営業時間を返信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1080,
+            520
+          ]
+        },
+        {
+          "id": "ld-ai-prompt",
+          "name": "AI返答プロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1080,
+            660
+          ]
+        },
+        {
+          "id": "ld-claude",
+          "name": "Claude AI返答生成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1300,
+            660
+          ]
+        },
+        {
+          "id": "ld-ai-reply",
+          "name": "AI返答をLINEに送信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1520,
+            660
+          ]
+        },
+        {
+          "id": "ld-broadcast-trigger",
+          "name": "定期配信トリガー（毎週月曜9時）",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            200,
+            600
+          ]
+        },
+        {
+          "id": "ld-broadcast-msg",
+          "name": "週次一斉配信メッセージ",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            420,
+            600
+          ]
+        }
+      ],
+      "nodeCount": 13
+    },
+    {
+      "id": "lIPXpgBTg478uHW0",
+      "name": "🎯 SALES日次レビュー通知（毎日9:30 JST）",
+      "active": true,
+      "createdAt": "2026-05-18T20:48:08.480Z",
+      "updatedAt": "2026-05-21T07:26:17.915Z",
+      "nodes": [
+        {
+          "id": "sd-trigger",
+          "name": "6:30スケジュール",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            200,
+            300
+          ]
+        },
+        {
+          "id": "sd-date",
+          "name": "日付設定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            420,
+            300
+          ]
+        },
+        {
+          "id": "sd-oauth",
+          "name": "OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            620,
+            300
+          ]
+        },
+        {
+          "id": "sd-read",
+          "name": "SALES台帳読込",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            820,
+            300
+          ]
+        },
+        {
+          "id": "sd-format",
+          "name": "レビュー通知整形",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1020,
+            300
+          ]
+        },
+        {
+          "id": "sd-check",
+          "name": "リードがあるか？",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            1220,
+            300
+          ]
+        },
+        {
+          "id": "sd-line",
+          "name": "LINE日次レビュー通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1440,
+            180
+          ]
+        },
+        {
+          "id": "board-notify-lIPXpgBT",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 8
+    },
+    {
+      "id": "oX27R5nH3AYa6KlW",
+      "name": "📋 全社ボード自動同期（毎日6:50/19:00 JST）",
+      "active": true,
+      "createdAt": "2026-05-18T09:30:05.980Z",
+      "updatedAt": "2026-05-23T05:37:36.310Z",
+      "nodes": [
+        {
+          "id": "bs-wh",
+          "name": "手動Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            100,
+            500
+          ]
+        },
+        {
+          "id": "bs-oauth",
+          "name": "OAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            340,
+            300
+          ]
+        },
+        {
+          "id": "bs-date",
+          "name": "日付設定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            540,
+            300
+          ]
+        },
+        {
+          "id": "bs-gh-todo",
+          "name": "GitHub_todo",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            740,
+            300
+          ]
+        },
+        {
+          "id": "bs-merge-todo",
+          "name": "todo集計",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            940,
+            300
+          ]
+        },
+        {
+          "id": "bs-gh-doing",
+          "name": "GitHub_doing",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1140,
+            300
+          ]
+        },
+        {
+          "id": "bs-merge-doing",
+          "name": "doing集計",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1340,
+            300
+          ]
+        },
+        {
+          "id": "bs-gh-waiting",
+          "name": "GitHub_waiting",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1540,
+            300
+          ]
+        },
+        {
+          "id": "bs-merge-waiting",
+          "name": "waiting集計",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1740,
+            300
+          ]
+        },
+        {
+          "id": "bs-gh-done",
+          "name": "GitHub_done",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1940,
+            300
+          ]
+        },
+        {
+          "id": "bs-merge-done",
+          "name": "done集計",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2140,
+            300
+          ]
+        },
+        {
+          "id": "bs-n8n-wf",
+          "name": "n8n_WF一覧",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2340,
+            300
+          ]
+        },
+        {
+          "id": "bs-agg",
+          "name": "データ集計",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            2540,
+            300
+          ]
+        },
+        {
+          "id": "bs-clear",
+          "name": "チケットボードクリア",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2740,
+            300
+          ]
+        },
+        {
+          "id": "bs-write",
+          "name": "チケットボード書き込み",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2940,
+            300
+          ]
+        },
+        {
+          "id": "bs-log",
+          "name": "稼働ログデータ生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            3140,
+            300
+          ]
+        },
+        {
+          "id": "bs-line",
+          "name": "LINE同期完了通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3340,
+            300
+          ]
+        },
+        {
+          "id": "bs-bridge",
+          "name": "データブリッジ",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            3040,
+            300
+          ]
+        },
+        {
+          "id": "bs-system-status-code",
+          "name": "システム状態データ生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            3500,
+            200
+          ]
+        },
+        {
+          "id": "bs-system-status-write",
+          "name": "システム状態シート更新",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3700,
+            200
+          ]
+        },
+        {
+          "id": "bs-mgmt-status-code",
+          "name": "経営状態データ生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            3500,
+            400
+          ]
+        },
+        {
+          "id": "bs-mgmt-status-write",
+          "name": "経営状態シート更新",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3700,
+            400
+          ]
+        },
+        {
+          "id": "exec_history_node_001",
+          "name": "n8n実行履歴取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2540,
+            450
+          ]
+        },
+        {
+          "id": "log_sheet_update_001",
+          "name": "稼働ログシート更新",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3340,
+            300
+          ]
+        },
+        {
+          "id": "deliverables_ts_001",
+          "name": "成果物管理タイムスタンプ",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            4000,
+            100
+          ]
+        },
+        {
+          "id": "sales_header_001",
+          "name": "SALESリードデータ生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            4000,
+            250
+          ]
+        },
+        {
+          "id": "api_cost_status_001",
+          "name": "APIコスト状態更新",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            4000,
+            400
+          ]
+        },
+        {
+          "id": "sales_http_update_001",
+          "name": "SALESリードシート更新",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            4200,
+            250
+          ]
+        },
+        {
+          "id": "schedule_30min_001",
+          "name": "毎日6:50・19:00スケジュール（JST）",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            -200,
+            200
+          ]
+        },
+        {
+          "id": "drive-files-fetch",
+          "name": "Drive最新ファイル取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            2840,
+            300
+          ]
+        },
+        {
+          "id": "bs-log-clear",
+          "name": "稼働ログシートクリア",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            3140,
+            150
+          ]
+        }
+      ],
+      "nodeCount": 31
+    },
+    {
+      "id": "pbGRNA9dKLzHqqxQ",
+      "name": "✅ COO→部門AI プリフライトチェック（3回パス）",
+      "active": true,
+      "createdAt": "2026-05-16T15:27:07.823Z",
+      "updatedAt": "2026-05-21T03:17:17.673Z",
+      "nodes": [
+        {
+          "id": "pf-webhook",
+          "name": "チケット受信",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            300
+          ]
+        },
+        {
+          "id": "pf-parse",
+          "name": "チケット解析",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            420,
+            300
+          ]
+        },
+        {
+          "id": "pf-pass1",
+          "name": "Pass1: 仕様チェック（Claude）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            640,
+            300
+          ]
+        },
+        {
+          "id": "pf-p1eval",
+          "name": "Pass1結果評価",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            860,
+            300
+          ]
+        },
+        {
+          "id": "pf-pass2",
+          "name": "Pass2: 設計レビュー（Claude）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1080,
+            300
+          ]
+        },
+        {
+          "id": "pf-p2eval",
+          "name": "Pass2結果評価",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1300,
+            300
+          ]
+        },
+        {
+          "id": "pf-pass3",
+          "name": "Pass3: リスク評価（Claude）",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1520,
+            300
+          ]
+        },
+        {
+          "id": "pf-final",
+          "name": "最終判定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1740,
+            300
+          ]
+        },
+        {
+          "id": "pf-line",
+          "name": "LINE通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1960,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 9
+    },
+    {
+      "id": "pwNqRL78WU38BSzL",
+      "name": "LINE送信テスト",
+      "active": false,
+      "createdAt": "2026-05-07T01:40:23.895Z",
+      "updatedAt": "2026-05-21T07:26:19.303Z",
+      "nodes": [
+        {
+          "id": "trigger",
+          "name": "手動トリガー",
+          "type": "n8n-nodes-base.manualTrigger",
+          "position": [
+            0,
+            0
+          ]
+        },
+        {
+          "id": "line_send",
+          "name": "LINE送信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            220,
+            0
+          ]
+        }
+      ],
+      "nodeCount": 2
+    },
+    {
+      "id": "uZ8lyAMpYWKdm9nS",
+      "name": "給与計算タスク自動登録（毎月20日）",
+      "active": true,
+      "createdAt": "2026-05-23T03:35:14.459Z",
+      "updatedAt": "2026-05-23T03:35:14.459Z",
+      "nodes": [
+        {
+          "id": "node-schedule",
+          "name": "毎月20日9時",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            0,
+            0
+          ]
+        },
+        {
+          "id": "node-webhook",
+          "name": "手動実行Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            0,
+            200
+          ]
+        },
+        {
+          "id": "node-calc",
+          "name": "翌月タスク日程計算",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            300,
+            100
+          ]
+        },
+        {
+          "id": "node-oauth",
+          "name": "OAuthトークン取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            550,
+            100
+          ]
+        },
+        {
+          "id": "node-create-event",
+          "name": "カレンダーイベント作成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            800,
+            100
+          ]
+        },
+        {
+          "id": "node-line",
+          "name": "LINE通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1050,
+            100
+          ]
+        }
+      ],
+      "nodeCount": 6
+    },
+    {
+      "id": "uxIDllsGUiDilADI",
+      "name": "FIN月次レポート",
+      "active": true,
+      "createdAt": "2026-05-07T22:51:07.765Z",
+      "updatedAt": "2026-05-23T05:37:44.353Z",
+      "nodes": [
+        {
+          "id": "sch",
+          "name": "月次スケジュール",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            0,
+            300
+          ]
+        },
+        {
+          "id": "date",
+          "name": "日付設定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            220,
+            300
+          ]
+        },
+        {
+          "id": "oauth",
+          "name": "ユーザーOAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            440,
+            300
+          ]
+        },
+        {
+          "id": "prompt",
+          "name": "FINプロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            660,
+            300
+          ]
+        },
+        {
+          "id": "ds",
+          "name": "DeepSeek集計",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            880,
+            300
+          ]
+        },
+        {
+          "id": "fmt",
+          "name": "FINレポート生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1100,
+            300
+          ]
+        },
+        {
+          "id": "cr",
+          "name": "FINファイル作成",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1320,
+            300
+          ]
+        },
+        {
+          "id": "up",
+          "name": "FINコンテンツ保存",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1540,
+            300
+          ]
+        },
+        {
+          "id": "line",
+          "name": "LINE月次報告",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1760,
+            300
+          ]
+        },
+        {
+          "id": "board-notify-uxIDllsG",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        },
+        {
+          "id": "manual-webhook-trigger",
+          "name": "手動実行Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            100,
+            600
+          ]
+        },
+        {
+          "id": "fin-qa-prompt-gen",
+          "name": "FIN QAプロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            920,
+            150
+          ]
+        },
+        {
+          "id": "fin-qa-api",
+          "name": "FIN GPT-4o mini QA",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1120,
+            150
+          ]
+        },
+        {
+          "id": "fin-qa-decide",
+          "name": "FIN QA判定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1320,
+            150
+          ]
+        }
+      ],
+      "nodeCount": 14
+    },
+    {
+      "id": "wxJUU8dPwbWqFyGP",
+      "name": "週次Signal DB分析",
+      "active": true,
+      "createdAt": "2026-05-07T22:12:43.542Z",
+      "updatedAt": "2026-05-20T10:42:55.140Z",
+      "nodes": [
+        {
+          "id": "sched",
+          "name": "週次スケジュール（日曜4時）",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "position": [
+            0,
+            300
+          ]
+        },
+        {
+          "id": "date",
+          "name": "日付設定",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            220,
+            300
+          ]
+        },
+        {
+          "id": "oauth",
+          "name": "ユーザーOAuth取得",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            440,
+            300
+          ]
+        },
+        {
+          "id": "read",
+          "name": "Signal DB読み込み",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            660,
+            300
+          ]
+        },
+        {
+          "id": "prompt",
+          "name": "分析プロンプト生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            880,
+            300
+          ]
+        },
+        {
+          "id": "claude",
+          "name": "Claude Sonnet分析",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1100,
+            300
+          ]
+        },
+        {
+          "id": "line_gen",
+          "name": "LINE メッセージ生成",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            1320,
+            300
+          ]
+        },
+        {
+          "id": "line_send",
+          "name": "LINE送信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1540,
+            300
+          ]
+        },
+        {
+          "id": "board-notify-wxJUU8dP",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        },
+        {
+          "id": "manual-webhook-trigger",
+          "name": "手動実行Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            100,
+            600
+          ]
+        }
+      ],
+      "nodeCount": 10
+    },
+    {
+      "id": "zFS7khgDCmK5GR0L",
+      "name": "✅ SALES承認→Playwright送信（LINEコマンド受信）",
+      "active": true,
+      "createdAt": "2026-05-18T20:48:08.667Z",
+      "updatedAt": "2026-05-21T07:26:20.498Z",
+      "nodes": [
+        {
+          "id": "sa-webhook",
+          "name": "LINE承認受信Webhook",
+          "type": "n8n-nodes-base.webhook",
+          "position": [
+            200,
+            300
+          ]
+        },
+        {
+          "id": "sa-parse",
+          "name": "承認テキスト解析",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            420,
+            300
+          ]
+        },
+        {
+          "id": "sa-check",
+          "name": "OKコマンドか？",
+          "type": "n8n-nodes-base.if",
+          "position": [
+            620,
+            300
+          ]
+        },
+        {
+          "id": "sa-playwright",
+          "name": "Playwright送信準備",
+          "type": "n8n-nodes-base.code",
+          "position": [
+            840,
+            180
+          ]
+        },
+        {
+          "id": "sa-line-confirm",
+          "name": "LINE承認確認返信",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            1040,
+            180
+          ]
+        },
+        {
+          "id": "board-notify-zFS7khgD",
+          "name": "全社ボード同期通知",
+          "type": "n8n-nodes-base.httpRequest",
+          "position": [
+            9999,
+            300
+          ]
+        }
+      ],
+      "nodeCount": 6
+    }
+  ]
+}
