@@ -1,6 +1,6 @@
 # NS-OSV2 Architecture Context
 
-更新日: 2026-05-30
+更新日: 2026-05-30 セッション2
 
 ## 中核構造
 
@@ -11,7 +11,8 @@ BUN_CEO
         │     └── tickets/ [todo/doing/qa/needs_rework/blocked/error/done/archived]
         ├── AUDIT Director v1（独立内部監査人・COOから独立）
         │     ├── 自動実行: crontab 毎週金曜21:03 / 毎月最終金曜21:03
-        │     ├── Provider: OpenAI gpt-5.4（切替: audit-use anthropic/openai）
+        │     ├── Provider: OpenAI gpt-5.4（切替: audit-use anthropic/openai/gemini）
+        │     ├── Gemini: gemini-2.5-pro（google.genai新API対応済み）
         │     ├── レポート: 01_Areas/AUDIT/AUDIT_Report_*.md
         │     └── 是正追跡: 01_Areas/AUDIT/remediation_log.md
         ├── Context Packages（各部門の人格PKG）
@@ -25,11 +26,11 @@ BUN_CEO
         │     ├── DEV: dev_director_v1 / dev_engineer_v1
         │     └── INFRA: infra_orchestrator_v1（⚠️全面書き直し中: 20260530_0001）/ coo_dispatch_agent_v1
         ├── KnowledgeBase（02_Resources/KnowledgeBase/）
-        │     ├── domain_coo_operations.md
-        │     ├── domain_bizdev_mkt.md
-        │     ├── domain_kaigo_ops.md
-        │     ├── domain_ns_os.md
-        │     └── rsc_daily_patrol/
+        │     ├── domain_coo_operations.md（COO運用・ミス防止）
+        │     ├── domain_bizdev_mkt.md（BizDev・市場評価）
+        │     ├── domain_kaigo_ops.md（介護制度・加算）
+        │     ├── domain_ns_os.md（NS-OS設計・パイプライン）
+        │     └── rsc_daily_patrol/（RSC日次巡回レポート）
         └── COO管理ファイル（01_Areas/COO/）
               ├── ClaudeCode_Handoff_Latest.md
               ├── AI_Runner_Status_Latest.md
@@ -50,14 +51,14 @@ BUN_CEO
 `todo` / `doing` / `qa` / `needs_rework` / `blocked` / `error` / `done` / `archived`
 ※ `qa_ready` 等の非公式ステータスは禁止
 
-## AI Runner状態（2026-05-30時点）
+## AI Runner状態（2026-05-30 S2終了時点）
 
 | AI | Status |
 |----|--------|
 | Codex（GPT-5.4） | offline |
-| Claude Code | idle |
+| Claude Code | limited（S2セッション終了） |
 | Antigravity | limited |
-| AUDIT Director | 自動実行（crontab） |
+| AUDIT Director | 自動実行（crontab）次回: 2026-06-05 21:03 |
 
 ## パイプライン（設計済み・復旧中）
 
@@ -66,7 +67,7 @@ BUN_CEO
 07:15 → signal_YYYYMMDD.md → BizDev/inbox/
 当日中 → feedback_YYYYMMDD.md → SALES/feedback/
 ```
-⚠️ 現状断絶中。復旧チケット: 20260530_0002
+⚠️ 現状断絶中。復旧チケット: 20260530_0002（doing/・再dispatch待ち）
 
 ## 本命
 
