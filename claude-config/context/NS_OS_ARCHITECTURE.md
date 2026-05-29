@@ -1,221 +1,75 @@
----
-# NS_OS_ARCHITECTURE | NorthStar OS
-# 更新日: 2026-05-22（L3✅確認・成熟度Level2→3移行中）
-# ※このファイルはアーキテクチャ変更時・セッション終了時に更新する
-# ※全体図はこのASCIIボックス形式を必ず守り、ステータスを含めること
----
+# NS-OSV2 Architecture Context
 
-## NorthStar OS 全体アーキテクチャ図
+更新日: 2026-05-30
+
+## 中核構造
 
 ```
-╔══════════════════════════════════════════════════════════════════╗
-║  BUN_CEO                                                         ║
-║  【主】ダッシュボード（朝夕）議論・方向性・承認                     ║
-║  【副】LINE アラート受信・緊急指示                                 ║
-╚══════════════════╦═══════════════════════════════════════════════╝
-                   ║
-╔══════════════════▼═══════════════════════════════════════════════╗
-║  COO                                                             ║
-║  【主】Claude Code（このインターフェース）✅ 稼働中                 ║
-║  【副】Antigravity（PC使用不可時のみ・実行は制限あり）              ║
-║  役割：設計・監督・チケット起票・例外処理のみ                       ║
-╚══════╦═══════════════════════════════════════╦══════════════════╝
-       ║ チケット起票                           ║ 状態監視・制御
-       ▼                                       ▼
-╔════════════════════════╗  ╔═══════════════════════════════════════╗
-║  チケットシステム        ║  ║  n8n（VPS 162.43.78.67・24/7）        ║
-║  GitHub northstar-os   ║  ║                                       ║
-║                        ║  ║  定期WF ✅ 稼働中                     ║
-║  tickets/              ║  ║  朝7:00ブリーフィング+Dashboard        ║
-║    todo/   ← 未着手    ║  ║  夕19:00リフレクション                 ║
-║    doing/  ← 処理中    ║  ║  部門日次報告18:45                    ║
-║    waiting/← Codex待ち ║  ║  RSCリサーチ6:00                     ║
-║    done/   ← 完了      ║  ║  BizDevスキャン月曜8:00               ║
-║                        ║  ║  Signal DB分析日曜4:00                ║
-║  dev/templates/n8n/   ║  ║  FIN月次レポート月1日9:00              ║
-║    L1テンプレ6本 ✅     ║  ║  n8nバックアップ日曜3:00              ║
-║                        ║  ║                                       ║
-║  dev/SPECIALIST_       ║  ║  常時Webhook ✅ 稼働中                 ║
-║    PERSONAS.md ✅      ║  ║  LINEコマンド処理                     ║
-║                        ║  ║  エラーアラート（全社共通）             ║
-╚════════════════════════╝  ║  プリフライト3回パス                   ║
-                            ║  DEV QAレビュー（DeepSeek）            ║
-                            ║                                       ║
-                            ║  MKT/SALES WF ✅ 稼働中（2026-05-18）  ║
-                            ║  PRタイムズ4エージェント 毎日9:00       ║
-                            ║  SNSコンテンツ生成 月水金10:00         ║
-                            ║                                       ║
-                            ║  System QA夜間 ✅ 毎日21:00 JST        ║
-                            ╚═══════════════════════════════════════╝
-                                           ║
-╔══════════════════════════════════════════▼══════════════════════╗
-║  DEVパイプライン（VPS systemd常時稼働）                          ║
-║                                                                  ║
-║  ticket-puller.sh ✅ 稼働中（60秒ポーリング）                    ║
-║    └── L1: テンプレート適用 → done/ ✅ 動作確認済み              ║
-║    └── L2: claude --print → done/ ✅ 動作確認済み               ║
-║    └── L3: Python+Claude API方式 → waiting/ ✅ 正常稼働中       ║
-║           （2026-05-19 Claude Code CLI方式から移行・解決済み）    ║
-║                                                                  ║
-║  codex-watcher.sh ✅ 稼働中（30秒ポーリング）                    ║
-║    └── waiting/ を監視 → codex exec でデバッグ → done/          ║
-║                                                                  ║
-║  devagentユーザー ✅ 設定済み（ANTHROPIC_API_KEY渡し修正済み）    ║
-╚══════════════════════════════════════════════════════╦═══════════╝
-                                                       ║
-╔══════════════════════════════════════════════════════▼══════════╗
-║  部門AI・専門人格エージェント                                     ║
-║                                                                  ║
-║  MKT部門                                                         ║
-║    Jay Abraham（PRタイムズスキャン・市場機会発見）✅ 稼働中        ║
-║    Alex Hormozi（オファー設計）✅ 稼働中                          ║
-║    Dan Kennedy（アウトリーチ文案・4フォーミュラ）✅ 稼働中         ║
-║    GPT-4o QA（Playwright自動送信時に有効化）⏳ 待機中             ║
-║    Gary V + Hormozi（SNSコンテンツ週3回）✅ 稼働中               ║
-║    Neil Patel（SEO WF）🔴 未実装                                 ║
-║                                                                  ║
-║  RSC部門                                                         ║
-║    Gemini（リサーチ巡回・毎日6:00）✅ 稼働中                     ║
-║                                                                  ║
-║  DEV部門                                                         ║
-║    Python+Claude API DEV Agent（L3実装）✅ 正常稼働中            ║
-║    Codex CLI（デバッグ専任）✅ 稼働中                            ║
-║    DeepSeek QA（WF経由）✅ 稼働中                               ║
-║                                                                  ║
-║  FIN部門                                                         ║
-║    Claude Sonnet（月次レポート）✅ 稼働中                         ║
-║    P&L4ステップ分析スキル 🟡 今週追加予定                         ║
-║                                                                  ║
-║  OPS部門                                                         ║
-║    純青: 仕様確定済み・Python実装待ち 🔴 未実装                   ║
-║    信和・共生: 仕様ヒアリング待ち 🔴 未実施                       ║
-╚═══════════════════════════════════════════════╦═════════════════╝
-                                                ║
-╔═══════════════════════════════════════════════▼═════════════════╗
-║  ストレージ・全社管理                                             ║
-║                                                                  ║
-║  Google Drive ✅ 稼働中                                          ║
-║    Reports/{DEV/RSC/BizDev/FIN/OPS}/                            ║
-║    research/Daily_Report/（Dashboard・COO_Context）              ║
-║                                                                  ║
-║  全社ボード（Google Sheets）✅ 自動管理中                         ║
-║    チケットボード / n8n稼働ログ（エラー中WFのみ表示）              ║
-║    APIコスト（DeepSeek差分自動・他0表示）/ 成果物管理              ║
-║    SALES_リード管理 / システム状態 / 経営状態                     ║
-║    ※全21WFにerrorWorkflow設定済み → エラー時自動アラート          ║
-║                                                                  ║
-║  GitHub（northstar-os）✅ 稼働中                                 ║
-║    tickets/ / dev/templates/ / SPECIALIST_PERSONAS.md           ║
-║    reports/ （2026-05-22追加）                                   ║
-║                                                                  ║
-║  LINE Harness ✅ 稼働中（LINE月次上限中・6/1リセット）             ║
-║    northstar-line.bestthink01109.workers.dev                    ║
-╚══════════════════════════════════════════════════════════════════╝
+BUN_CEO
+  └── COO（Codex/Claude Code/Antigravity）
+        ├── Board（00_Projects/NS-OSV2_Board/）
+        │     └── tickets/ [todo/doing/qa/needs_rework/blocked/error/done/archived]
+        ├── AUDIT Director v1（独立内部監査人・COOから独立）
+        │     ├── 自動実行: crontab 毎週金曜21:03 / 毎月最終金曜21:03
+        │     ├── Provider: OpenAI gpt-5.4（切替: audit-use anthropic/openai）
+        │     ├── レポート: 01_Areas/AUDIT/AUDIT_Report_*.md
+        │     └── 是正追跡: 01_Areas/AUDIT/remediation_log.md
+        ├── Context Packages（各部門の人格PKG）
+        │     ├── BizDev: biz_director_v1 / market_intelligence_v1 / product_strategist_v1
+        │     ├── MKT: mkt_director_v1 / offer_strategist_v1 / direct_response_writer_v1
+        │     │        gary_vaynerchuk_sns_strategy_v1 / jay_abraham_strategy_v1 / revenue_operator_v1
+        │     ├── RSC: rsc_scout_v1 / trend_scout_v1
+        │     ├── SALES: sales_director_v1 / russell_brunson_sales_flow_v1
+        │     │          satou_masahiro_practical_sales_v1 / brian_tracy_closing_discipline_v1
+        │     ├── FIN: barry_fin_ops_v1
+        │     ├── DEV: dev_director_v1 / dev_engineer_v1
+        │     └── INFRA: infra_orchestrator_v1（⚠️全面書き直し中: 20260530_0001）/ coo_dispatch_agent_v1
+        ├── KnowledgeBase（02_Resources/KnowledgeBase/）
+        │     ├── domain_coo_operations.md
+        │     ├── domain_bizdev_mkt.md
+        │     ├── domain_kaigo_ops.md
+        │     ├── domain_ns_os.md
+        │     └── rsc_daily_patrol/
+        └── COO管理ファイル（01_Areas/COO/）
+              ├── ClaudeCode_Handoff_Latest.md
+              ├── AI_Runner_Status_Latest.md
+              └── signal_pipeline_ops_spec_20260529.md
 ```
 
----
+## V2 の要点
 
-## ステータス凡例
-| 記号 | 意味 |
-|------|------|
-| ✅ 稼働中 | 正常動作・本番稼働 |
-| ⚠️ 要修正 | 動作するが問題あり・次セッションで修正 |
-| ⚠️ LINE停止/後続稼働 | LINE月次上限。6/1リセット後に自動回復 |
-| 🟡 今週実施予定 | 次セッションで実装 |
-| ⏳ 待機中 | 設定済みだが条件待ち |
-| 🔴 未実装 | 未着手・未構築 |
+- Board中心主義（Board外の仕事は禁止）
+- AI同士の直接会話禁止（チケット・成果物・コンテキスト経由）
+- 成果物必須・QA→COO現物確認→done
+- COO実動禁止・例外条項なし（2026-05-30 BUN_CEO確定）
+- latest面は入口、実チケットとアーカイブ文脈が正本
+- V1参照・混用禁止（V1 WFはVPS上で並行稼働中だがV2 PKGには記述しない）
 
-## 2026-05-22 セッション 主な変更点
+## Board ステータス（正式8種のみ）
 
-```
-【L3 DEVパイプライン✅正常確認】
-- 2026-05-19修正済みだったがアーキテクチャ図が未更新だった
-- dev_agent_trigger.sh → Python+Claude API方式（l3_agent.py）に移行済みを確認
-- 最終実行 2026-05-20 14:30 exit:0 正常終了確認
-- NS_OS_ARCHITECTURE.md・ai_handoff.md を✅に更新
+`todo` / `doing` / `qa` / `needs_rework` / `blocked` / `error` / `done` / `archived`
+※ `qa_ready` 等の非公式ステータスは禁止
 
-【YouTube insightパイプライン分析完了】
-- individual/フォルダ 15本分析（10本既分析確認 + 5本新規）
-- 統合COOアクションレポート作成 → GitHub/reports/ + Drive/BizDev/ 保存
-- 今後のアクションプランをai_handoff.mdに反映
+## AI Runner状態（2026-05-30時点）
 
-【次セッションへのアクションプラン（詳細）】
-今週：GitHub機密監査 / FINベリファイノード追加 / FINスキルP&L4ステップ追加 / MKT_PRエラー修正
-来週：月次3タスクのコントラクト設計 / スキル3原則リファクタリング / KENZAI競合調査スキル設計
+| AI | Status |
+|----|--------|
+| Codex（GPT-5.4） | offline |
+| Claude Code | idle |
+| Antigravity | limited |
+| AUDIT Director | 自動実行（crontab） |
 
-【NS-OS成熟度（2026-05-22時点）】
-Level1→✅超 / Level2→✅おおむね達成 / Level3→⚠️移行中 / Level4→🔴未達
-次のマイルストーン：コントラクト設計 + ベリファイWF実装 → Level2完全達成 → Level3へ
-```
-
-## 2026-05-21 夕方セッション 主な変更点
+## パイプライン（設計済み・復旧中）
 
 ```
-【System QA強化 - Phase 1実装】
-- System QA cronを21:00 JSTに修正（0 12→0 21、WF名と一致）
-- エラートリガーWebhook新設（/webhook/sysqa-error-trigger）
-- エラー診断・集約フロー（7パターン + 5分バッファ + エスカレーション）
-- エラーアラートWFにSystem QAキックノード追加
-
-【全WF一括バグ修正】
-- 全25WFをスキャン: 19本修正 / 6本クリーン
-- P1: URL=プレフィックスバグ除去 / P2: JSON.stringify除去 / P3: LINE onError修正
+06:30 RSC Scout → Daily_Report → rsc_daily_patrol/
+07:15 → signal_YYYYMMDD.md → BizDev/inbox/
+当日中 → feedback_YYYYMMDD.md → SALES/feedback/
 ```
+⚠️ 現状断絶中。復旧チケット: 20260530_0002
 
----
+## 本命
 
-## VPSインフラ詳細
-
-| 項目 | 内容 |
-|------|------|
-| IP | 162.43.78.67（シンVPS） |
-| OS | Ubuntu 24.04.4 LTS |
-| Node.js | v24.15.0 |
-| Claude Code CLI | v2.1.143（/usr/bin/claude） |
-| Codex CLI | v0.130.0（/usr/bin/codex） |
-| Python | 3.12.3 |
-| n8n | 最新（:5678） |
-| SSH | ~/.ssh/vps_key（ssh-agentに登録） |
-
-### VPSディレクトリ構造
-```
-/root/
-├── .claude/CLAUDE.md          ← DEV Agent専用ルール
-├── .config/northstar/keys.sh  ← APIキー（ANTHROPIC/OPENAI/GITHUB）
-├── northstar/                 ← スクリプト置き場
-│   ├── ticket_puller.sh       ✅
-│   ├── apply_template.sh      ✅
-│   ├── dev_agent_trigger.sh   ✅ Python+Claude API方式（2026-05-19修正済み）
-│   ├── l3_agent.py            ✅ L3本体（Claude API直接呼び出し）
-│   ├── codex_watcher.sh       ✅
-│   └── logs/
-├── northstar-os/              ← GitHubクローン
-│   ├── tickets/{todo,doing,waiting,done}/
-│   ├── dev/templates/n8n/     ✅ 6テンプレート
-│   ├── reports/               ✅ 2026-05-22追加
-│   └── workspace/
-└── n8n-api.sh                 ✅
-```
-
----
-
-## 共通GoogleOAuth WF（2026-05-20新設）
-```
-ID: Eu3kQaH8vQpJmyqd
-Webhook: http://localhost:5678/webhook/google-oauth-token
-用途: 全WFのOAuth token一括発行・管理
-```
-
-## Googleカレンダー ID
-| カレンダー | ID |
-|---------|-----|
-| メインカレンダー | bestthink01109@gmail.com |
-| BUN_CEOタスク | a0c7e0a0c3b9038b4a54b546d6119480d08d047ac3676811ea6fd1b00da46dc2@group.calendar.google.com |
-
-## LINE Harness
-```
-Worker URL：https://northstar-line.bestthink01109.workers.dev
-Admin UI  ：https://northstar-line-admin-53079982.pages.dev
-対象LINE  ：ノーススター自動化デモ（@565mepka）
-Channel ID：2010090306
-```
+NorthStar-OSの本命は、介護・福祉現場で忙殺されているスタッフを少しでも楽にするための総合アプリ。
+年配スタッフでも使えるように、音声/OCR/PC入力のマルチ入力を前提にし、
+記録/労務/請求/加算/監査までを通す。
