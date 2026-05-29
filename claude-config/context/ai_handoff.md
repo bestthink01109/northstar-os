@@ -1,167 +1,59 @@
----
-# AI Handoff | NorthStar OS
-# 更新日: 2026-05-23（YouTube API v3登録完了・ナレッジ結晶化インフラ整備・Layer B設計確定）
-# ※このファイルはセッション終了時にCOOが必ず更新する
----
+# AI Handoff | NS-OSV2
 
-## ⚠️ COOセッション開始時の必須手順（スキップ禁止）
+更新日: 2026-05-30
 
-1. このファイルを読む
-2. technical_setup.md を読む
-3. philosophy_values.md / professional_identity.md / design_language.md / NS_OS_ARCHITECTURE.md を読む
-4. `node drive.js search "COO_Context"` で最新ファイルを読む
-5. 「コンテキスト読み込み完了。前回の続きから着手します」と宣言
-6. 作業開始
+## 役割
 
-## ⚠️ COOセッション終了時の必須手順（スキップ禁止）
+通常時は `Codex（GPT-5.4）` が NS-OSV2 の COO として振る舞う。
+`Claude Code` と `Antigravity` は通常時は担当 role / workstream を進める specialist runner とする。
+`Codex` が limit に近い、または limit 到達時のみ、`Claude Code` か `Antigravity` が代行 COO として振る舞う。
 
-以下の6ファイルを必ず更新してからセッションを終了すること：
-1. `ai_handoff.md` — 積み残し・完了・引き継ぎを更新
-2. `technical_setup.md` — インフラ変更があれば更新
-3. `philosophy_values.md` — 方針変更があれば更新
-4. `professional_identity.md` — 組織変更があれば更新
-5. `design_language.md` — 規則変更があれば更新
-6. `NS_OS_ARCHITECTURE.md` — アーキテクチャ変更があれば更新
+**AUDIT Director v1（独立内部監査人）**: 毎週金曜21:03（週次）・毎月最終金曜21:03（月次）にcrontab自動実行。
+現在のAUDITプロバイダー: OpenAI（gpt-5.4）。切り替えは `audit-use anthropic / openai` で可能。
 
----
+## セッション開始時の必須手順
 
-## COO体制（2026-05-22確定）
+1. `Vault/.claude/context/` の固定6ファイルを読む（グローバルではなくVault内が正本）
+2. `03_Archives/COO_Context_履歴/` の最新 `COO_Context_*_MAIN_*.md` を読む
+3. `01_Areas/COO/ClaudeCode_Handoff_Latest.md` を読む（次にやること・設定済み事項）
+4. Board / `AI_Runner_Status_Latest.md` の latest を読む
+5. 自分の runner status を `ACTIVE` に更新する
+6. 前回の積み残しと今回の最優先を短く要約してから着手する
 
-```
-主：Claude Code（このインターフェース）
-    - フル機能：ファイル操作・コード実行・n8n操作・全部門統括
+## セッション終了時の必須手順
 
-副：Antigravity 2.0（Google I/O 2026・5/19発表）
-    - エンジン：Gemini 3.5 Flash（289トークン/秒・Opus比4倍速）
-    - 用途：戦略議論・文書作成・分析・デバッグ全般
-    - 作業フォルダ: /Users/fuminariaksse/northstar-os/（統合済み）
-```
+1. 固定6ファイルを更新日含め最新化
+2. `COO_Context_YYYYMMDD_MAIN_*.md` を新規作成して残す
+3. `ClaudeCode_Handoff_Latest.md` を更新（Board実数・次セッション即実行事項）
+4. `AI_Runner_Status_Latest.md` を `LIMITED` または `IDLE` に更新
+5. remediation_log.md を更新（新規是正事項を追記）
+6. 次セッションが最短で再開できる形で残す
 
-## n8nワークフロー（2026-05-23版）
+## 次セッション即実行事項（優先順）
 
-| WF | ID | 状態 |
-|----|----|----|
-| 朝ブリーフィング | NjmKR3rlzaAdznoB | ✅稼働中 |
-| 夕リフレクション | VD4QeU4XVfhqmMbl | ✅稼働中 |
-| 全社ボード同期 | oX27R5nH3AYa6KlW | ✅稼働中 |
-| RSCリサーチ | 796EUn4zvboKFQiP | ✅稼働中 |
-| 部門日次報告 | 4LTj5vfwCcDqVUKc | ✅稼働中 |
-| BizDevスキャン | 0zftWq8EAnbcJwrE | ✅稼働中 |
-| Signal DB分析 | wxJUU8dPwbWqFyGP | ✅稼働中 |
-| FIN月次レポート | uxIDllsGUiDilADI | ✅稼働中 |
-| System QA夜間 | dSItw958pDfl3fMs | ✅稼働中 |
-| MKT_PRタイムズ | ht60IBCItF9vt1vO | ✅稼働中（2026-05-22 20:30 success確認） |
-| MKT_SNSコンテンツ | YGacVsIyaf43mfG2 | ✅稼働中 |
-| SALES日次レビュー | lIPXpgBTg478uHW0 | ✅稼働中 |
-| SALES承認Webhook | zFS7khgDCmK5GR0L | ⚠️骨格のみ・Playwright未実装 |
-| APIコスト日次更新 | 0XHdY5FAsuAkwtVW | ✅稼働中 |
-| LINEコマンド | Ury2oteVKpcHBI8m | ✅稼働中 |
-| n8nバックアップ | PAlz3XfDYycQA48D | ✅稼働中 |
-| n8nエラーアラート | VOR8Hbpt8FYEtmIp | ✅稼働中 |
-| プリフライト3回パス | pbGRNA9dKLzHqqxQ | ✅稼働中 |
-| DEV QA(DeepSeek) | RAtN2vX8tMOfHJ5G | ✅稼働中 |
-| SALES_PRタイムズ | Ru1FfTgXk6YWczjk | ✅稼働中（2026-05-22 20:45 success確認） |
-| LINE自動化デモ | l5snFeHnKr435xiL | ✅稼働中 |
-| 共通GoogleOAuth | Eu3kQaH8vQpJmyqd | ✅全WFが参照 |
-| YouTube APIテスト | 9AjBftcINoGx7CNH | ✅動作確認用（削除可） |
+1. 🔴 チケット`20260530_0002`（RSC signal pipeline復旧）→ dispatch実行
+2. 🔴 チケット`20260530_0003`（BizDev TAM根拠URL追加）→ dispatch実行
+3. 🔴 チケット`20260530_0001`（INFRA PKG全面書き直し）→ dispatch実行
+4. 🔴 フレームワークv2（revenue_model_evaluation_framework_v2）→ BUN_CEO承認確認
+5. 🟡 needs_rework/25件の優先度分類・dispatch
 
----
+## 現在の優先テーマ
 
-## 積み残しタスク（2026-05-23更新）
+- AUDIT所見の是正完遂（remediation_log.md参照）
+- パイプライン実稼働復旧（RSC→BizDev→SALES）
+- Board整合性の維持（status:フィールドとレーン一致）
 
-### 🔴 次セッション最優先
-| 優先 | タスク | 工数 |
-|------|--------|------|
-| 🔴 | 全社ボード確認（セッション開始必須） | — |
-| 🔴 | **TYPE A〜Dテンプレートリファクタリング** | 2h |
-| 🔴 | **Phase 2：YouTube自動収集 n8n WF本体構築** | 3h |
-| 🔴 | **YAMLフロントマター+マルチコピー方式実装** | 2h |
+## 重要な運用思想
 
-### 🟡 今週中
-| 優先 | タスク | 工数 |
-|------|--------|------|
-| 🟡 | Phase 3：Claude API自動分析ノード追加 | 2h |
-| 🟡 | 月次3タスクのコントラクト設計 | 1.5h |
-| 🟡 | LINE月次上限（6月1日リセット待ち） | — |
+- `ALIGN FIRST. Then Take Massive Action.`
+- `手抜きをしない。網羅する。魂を込める。`
+- COO実動禁止・例外条項なし（2026-05-30 BUN_CEO確定）
 
-### 🟡 BUN_CEO手動作業
-| タスク | 工数 |
-|--------|------|
-| Obsidianインストール（Step 0〜6） | 30min |
-| 126本を3 NotebookLMにアップロード | 30min |
-| NotebookLMで質問→distilled_*.md初回蒸留 | 1h |
+## Board 指示の受け方
 
-### 🟡 以上が終わったらやる
-| タスク | 工数 |
-|--------|------|
-| mkt/sales/dev-skill/references/ 中身作成 | 2h |
-| Phase 4：全社ボードYouTubeナレッジシート追加 | 1h |
-| KENZAI向けCLAUDE.mdと競合調査スキル設計 | 3h |
-
----
-
-## 完了済みタスク（2026-05-23追加）
-
-| タスク | 完了日 |
-|--------|--------|
-| YouTube Data API v3 n8n登録・動作確認 | 2026-05-23 |
-| YouTube検索キーワード拡充（102本・6カテゴリ） | 2026-05-23 |
-| distilled_ai_agent/mkt_sales/pkm 新設 | 2026-05-23 |
-| knowledge/mkt・sales・pkm・kaigo GitHub作成 | 2026-05-23 |
-| REPORT_FORM_GUIDE Layer B結晶化サイクル明文化 | 2026-05-23 |
-| 126本 3フォルダ自動仕分け | 2026-05-23 |
-| MKT_PR・SALES_PR✅・FIN月次✅・GitHub監査✅ 確認 | 2026-05-23 |
-| FINスキルP&L4ステップ追加（v2.0） | 2026-05-22 |
-| 既存4スキル v2.0リファクタリング | 2026-05-22 |
-| YouTube insight 126本インデックス・蒸留ナレッジ作成 | 2026-05-22 |
-| L3 DEVパイプライン✅確認 | 2026-05-22 |
-| DeepSeek認証共通化修復 | 2026-05-22 |
-| 福岡プラントLINE Bot完全復旧 | 2026-05-22（OPS） |
-
----
-
-## 2026-05-23 確立したアーキテクチャ（重要・次セッション必読）
-
-### knowledge/ vs skill/references/ 役割分担（確定）
-- `knowledge/`（/Users/fuminariaksse/northstar-os/knowledge/）= 実装パターン・デバッグ手順（Antigravity書く）
-- `skill/references/`（/Users/fuminariaksse/.claude/commands/*-skill/references/）= ドメイン専門知識・常時ロード（Claude Code管理）
-- **統合不要・役割が根本的に異なる**
-
-### Layer B結晶化サイクル（確定）
-Type D指示書 → 実行 → 報告書💡 → knowledge/またはdistilled_*.md → 次のref_skills参照 → ループ
-
-### スキル構成（2026-05-23現在）
-```
-coo-skill/references/
-  youtube_insights_distilled.md / youtube_knowledge_index.md
-  distilled_ai_agent.md ← NEW
-  distilled_mkt_sales.md ← NEW
-  distilled_pkm.md ← NEW
-  three_tool_integration.md / obsidian_vault_design.md
-  obsidian_setup_guide.md / daily_note_template.md
-
-fin-skill/references/ ← 介護・障害福祉法令・KPI（9ファイル）
-rsc-skill/references/ ← BIZ_SCORING・YouTube収集設計（102キーワード）
-mkt-skill/references/ ← 空（次フェーズ）
-sales-skill/references/ ← 空（次フェーズ）
-dev-skill/references/ ← 空（次フェーズ）
-```
-
----
-
-## インフラ・技術メモ（重要）
-
-- VPS SSH：ssh root@162.43.78.67 | n8n: http://162.43.78.67:5678
-- n8n TZ=Asia/Tokyo（JST）：cronは JST値で設定
-- YouTube API: docker-compose.yml の YOUTUBE_API_KEY 環境変数で管理
-- N8N_BLOCK_ENV_ACCESS_IN_NODE=false を設定（$env.変数名 を WF内で使用可）
-- 共通OAuthWF: http://localhost:5678/webhook/google-oauth-token
-- LINE月次上限：6月1日リセット
-- OPSシステム注意：appsscript.jsonにoauthScopes追加禁止（Webhookが302になる）
-- バックアップ：GitHub日次（WF定義・3:00 JST）+ VPS SQLite日次（3:30 JST）
-
-## OPSシステム注意事項（2026-05-22追加）
-- appsscript.jsonにoauthScopes追加禁止: Webhookが302になる
-- GASの権限再認証はGASエディタから手動実行のみ有効
-- Gemini APIキーは定期更新が必要（AI Studio）
-- clasp tokenが期限切れの可能性: 次回push時は clasp login が必要
+- 3AIは同じBoard上の指示を見る
+- 通常時のCOO指示は `Codex` が出す
+- `Claude Code` と `Antigravity` は通常時は割り当て済みworkstreamを進める
+- `Codex` が limit 時だけ、代行COOがdispatchを引き継ぐ
+- 指示は、チケット本文・frontmatter・handoff noteに残す
+- runner稼働状態は `AI_Runner_Status_Latest.md` に集約する
