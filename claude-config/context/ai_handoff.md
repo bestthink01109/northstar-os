@@ -1,6 +1,6 @@
 # AI Handoff | NS-OSV2
 
-更新日: 2026-05-30
+更新日: 2026-05-30 セッション2
 
 ## 役割
 
@@ -9,7 +9,8 @@
 `Codex` が limit に近い、または limit 到達時のみ、`Claude Code` か `Antigravity` が代行 COO として振る舞う。
 
 **AUDIT Director v1（独立内部監査人）**: 毎週金曜21:03（週次）・毎月最終金曜21:03（月次）にcrontab自動実行。
-現在のAUDITプロバイダー: OpenAI（gpt-5.4）。切り替えは `audit-use anthropic / openai` で可能。
+現在のAUDITプロバイダー: OpenAI（gpt-5.4）。切り替えは `audit-use anthropic / openai / gemini` で可能。
+Gemini対応済み（google.genai新API・gemini-2.5-proモデル）。
 
 ## セッション開始時の必須手順
 
@@ -31,11 +32,14 @@
 
 ## 次セッション即実行事項（優先順）
 
-1. 🔴 チケット`20260530_0002`（RSC signal pipeline復旧）→ dispatch実行
-2. 🔴 チケット`20260530_0003`（BizDev TAM根拠URL追加）→ dispatch実行
-3. 🔴 チケット`20260530_0001`（INFRA PKG全面書き直し）→ dispatch実行
-4. 🔴 フレームワークv2（revenue_model_evaluation_framework_v2）→ BUN_CEO承認確認
-5. 🟡 needs_rework/25件の優先度分類・dispatch
+⚠️ 以下5チケットはdoing/にあるがサブエージェントがセッションLIMITで失敗。再dispatch必要。
+
+1. 🔴 チケット`20260530_0005`（Board status整合チェック）→ DEVに再dispatch
+2. 🔴 チケット`20260530_0004`（全PKG品質統一）→ DEVに再dispatch
+3. 🔴 チケット`20260530_0001`（INFRA PKG全面書き直し）→ DEVに再dispatch
+4. 🔴 チケット`20260530_0002`（RSCパイプライン復旧・WebFetch権限必須）→ RSCに再dispatch
+5. 🔴 チケット`20260530_0003`（BizDev TAM根拠URL）→ BizDevに再dispatch
+6. 🟡 needs_rework/25件の優先度分類・dispatch
 
 ## 現在の優先テーマ
 
