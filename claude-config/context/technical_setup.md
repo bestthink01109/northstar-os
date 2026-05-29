@@ -1,6 +1,6 @@
 # Technical Setup | NS-OSV2
 
-更新日: 2026-05-30
+更新日: 2026-05-30 セッション2
 
 ## 正本パス
 
@@ -19,10 +19,11 @@
 - Archive contexts: `03_Archives/COO_Context_履歴/`
 
 ### AUDIT System
-- 実行: `python3 Vault/01_Areas/AUDIT/audit_runner.py weekly [openai|anthropic]`
-- Provider切替: `audit-use openai` / `audit-use anthropic`（~/.zshrcにalias設定済み）
+- 実行: `python3 Vault/01_Areas/AUDIT/audit_runner.py weekly [openai|anthropic|gemini]`
+- Provider切替: `audit-use openai` / `audit-use anthropic` / `audit-use gemini`（~/.zshrc・~/.bash_profileにalias設定済み）
 - 現在のdefault: openai（gpt-5.4）
 - Anthropic: レートリミット対応済み（PKGファイル収集除外）
+- Gemini: google.genai新API対応済み（gemini-2.5-pro）
 
 ### 保存先の原則（必ず守る）
 - シェルスクリプト・Pythonスクリプト → `repo/scripts/` 配下
