@@ -1,1 +1,68 @@
-IyBBSSBIYW5kb2ZmIHwgTlMtT1NWMgoK5pu05paw5pelOiAyMDI2LTA1LTMwIOOCu+ODg+OCt+ODp+ODszMKCiMjIOW9ueWJsgoK6YCa5bi45pmC44GvIGBDb2RleO+8iEdQVC01LjTvvIlgIOOBjCBOUy1PU1YyIOOBriBDT08g44Go44GX44Gm5oyv44KL6Iie44GG44CCCmBDbGF1ZGUgQ29kZWAg44GoIGBBbnRpZ3Jhdml0eWAg44Gv6YCa5bi45pmC44Gv5ouF5b2TIHJvbGUgLyB3b3Jrc3RyZWFtIOOCkumAsuOCgeOCiyBzcGVjaWFsaXN0IHJ1bm5lciDjgajjgZnjgovjgIIKYENvZGV4YCDjgYwgbGltaXQg44Gr6L+R44GE44CB44G+44Gf44GvIGxpbWl0IOWIsOmBlOaZguOBruOBv+OAgWBDbGF1ZGUgQ29kZWAg44GLIGBBbnRpZ3Jhdml0eWAg44GM5Luj6KGMIENPTyDjgajjgZfjgabmjK/jgoroiJ7jgYbjgIIKCioqQVVESVQgRGlyZWN0b3IgdjHvvIjni6znq4vlhoXpg6jnm6Pmn7vkurrvvIkqKjog5q+O6YCx6YeR5pucMjE6MDPvvIjpgLHmrKHvvInjg7vmr47mnIjmnIDntYLph5Hmm5wyMTowM++8iOaciOasoe+8ieOBq2Nyb250YWLoh6rli5Xlrp/ooYzjgIIK54++5Zyo44GuQVVESVTjg5fjg61jg5DjgqTjg4Djg7w6IE9wZW5BSe+8iGdwdC01LjTvvInjgILliIfjgormm7/jgYjjga8gYGF1ZGl0LXVzZSBhbnRocm9waWMgLyBvcGVuYWkgLyBnZW1pbmlgIOOBp+WPr+iDveOAggpHZW1pbmnlr77lv5zmuIjjgb/vvIhnb29nbGUuZ2VuYWnmlrBBUEnjg7tnZW1pbmktMi41LXByb+ODouODh+ODq++8ieOAggoKIyMg44K744OD44K344Oh44Oz6ZaL5aeL5pmC44Gu5b+F6aCI5omL6aCGCgoxLiBgVmF1bHQvLmNsYXVkZS9jb250ZXh0L2Ag44Gu5Zu65a6aNuODleOCoeOCpOODq+OCkuiqreOCgO+8iOOCsOODreODvOODkOODq+OBp+OBr+OBquOBj1ZhdWx05YaF44GM5q2j5pys77yJCjIuIGAwM19BcmNoaXZlcy9DT09fQ29udGV4dF/lsaXmrbQvYCDjga7mnIDmlrAgYENPT19Db250ZXh0XypfTUFJTl8qLm1kYCDjgpLoqq3jgoAKMy4gYDAxX0FyZWFzL0NPTy9DbGF1ZGVDb2RlX0hhbmRvZmZfTGF0ZXN0Lm1kYCDjgpLoqq3jgIDvvIjmrKHjgavjgoTjgovjgZPjgajjg7voqK3lrprmuIjjgb/kuovpoIXvvIkKNC4gQm9hcmQgLyBgQUlfUnVubmVyX1N0YXR1c19MYXRlc3QubWRgIOOBriBsYXRlc3Qg44KS6Kqt44KACjUuIOiHquWIhuOBriBydW5uZXIgc3RhdHVzIOOCkiBgQUNUSVZFYCDjgavmm7TmlrDjgZnjgosKNi4g5YmN5Zue44Gu56mN44G/5q6L44GX44Go5LuK5Zue44Gu5pyA5YSq5YWI44KS55+t44GP6KaB57SE44GX44Gm44GL44KJ552A5omL44GZ44KLCgojIyDjgrvjg4Pjgrfjg6fjg7PntYLkuobmmYLjga7lv4XpoIjmiYvpoIYKCjEuIOWbuuWumjbjg5XjgqHjgqTjg6vjgpLmm7TmlrDml6XlkKvjgoHmnIDmlrDljJYKMi4gYENPT19Db250ZXh0X1lZWVlNTUREX01BSU5fKi5tZGAg44KS5paw6KaP5L2c5oiQ44GX44Gm5q6L44GZCjMuIGBDbGF1ZGVDb2RlX0hhbmRvZmZfTGF0ZXN0Lm1kYCDjgpLmm7TmlrDvvIhCb2FyZOWun+aVsOODu+asoeOCu+ODg+OCt+ODp+ODs+WNs+Wun+ihjOS6i+mghe+8iQo0LiBgQUlfUnVubmVyX1N0YXR1c19MYXRlc3QubWRgIOOCkiBgTElNSVRFRGAg44G+44Gf44GvIGBJRExFYCDjgavmm7TmlrAKNS4gcmVtZWRpYXRpb25fbG9nLm1kIOOCkuabtOaWsO+8iOaWsOimj+aYr+ato+S6i+mgheOCkui/veiomO+8iQo2LiDmrKHjgrvjg4Pjgrfjg6fjg7PjgYzmnIDnn63jgaflho3plovjgafjgY3jgovlvaLjgafmrovjgZkKCiMjIOasoeOCu+ODg+OCt+ODp+ODs+WNs+Wun+ihjOS6i+mghe+8iOWEquWFiOmghu+8iQoKMS4g8J+UtCBuZWVkc19yZXdvcmsvMTLku7bjga7lhoXlrrnnorroqo3jg7vliIbpoZ7vvIhCVU5fQ0VP44Go5LiA57eS44Gr56K66KqN5Lit44O76YCU5Lit77yJCiAgIC0g5Y2z5buD5qOE5YCZ6KOcOiBNS1RfcmV2ZW51ZV9tb2RlbF9JQ0XvvIhJQ0UgdjMuMOOBp+e9ruOBjeaPm+OBiOa4iOOBr++8ieODu2JvYXJkX2hvbWVfY2FkZW5jZQogICAtIOWGjWRpc3BhdGNo5YCZ6KOcOiBzdWJhZ2VudF9zdGFydHVwX3Byb3RvY29s44O7c3ViYWdlbnRfcGVyc29uYV9hc3NpZ25tZW50CiAgIC0g5Lit6Lqr56K66KqN5b+F6KaBOiBhaV9ydW5uZXJfc3RhdHVzX3N1cmZhY2Xjg7tjb29fZGlzcGF0Y2hfYWdlbnQgeDLjg7tyZXZlbnVlX2luZm9fY2hhbm5lbCB4MgoyLiDwn5S0IOeovOWDjeS4reOCteODljLku7bjga7lrozkuobnorroqo0KICAgLSBJTkZSQTogcWFfYXV0b2hhbmRvZmYgY3JvbnRhYueZu+mMsuS4reOBr1RFUk1JTkFM5o+P5YuV5b+F6KaBCiAgIC0gUUEgRGlyZWN0b3I6IHFhLzEz5Lu244GuUUHlrp/ooYzvvIhhMjA2MjdkZGVkNjE2ZThjMO+8iQozLiDwn5+hIFFBIERpcmVjdG9yIFBBU1Pjg4HjgrHjg4Pjg4jjga5DT0/nj77niannorroqo0g4oaSIGRvbmXmib/oqo0KNC4g8J+foSBXZWJGZXRjaOaoqemZkOi/veWKoOa4iOOBr++8iHNldHRpbmdzLmpzb27vvInihpIg57+M5pelUlND44OR44Kk44OX44Op44Kk44Oz5YaN5a6f6KGM56K66KqNCgojIyDnorrnq4vmuIjjgb/jgrfjgrnjg4bjg6DvvIjjgrvjg4Pjgrfjg6fjg7Mz44Gn6L+95Yqg44O75aSJ5pu077yJCgotICoqUUEgRGlyZWN0b3IgdjEuMSoqOiBgMDFfQXJlYXMvUUEvY29udGV4dF9wYWNrYWdlcy9xYV9kaXJlY3Rvcl92MS9gIOaWsOimj+S9nOaIkOWujOS6hgogIC0gTDLvvIjkuK3ouqvnorroqo3vvInlv4XpoIjjg7tkb25l5qip6ZmQ5LiN5Y+v44O7Q09P5om/6KqN44OV44Ot44O85b+F6aCICiAgLSBRQSBQQVNT44Gn44KCQ09P44GM54++54mp56K66KqN44GX44Gm44GL44KJZG9uZeaJv+iqje+8iDIwMjYtMDUtMzAgQlVOX0NFT+eiuuWamu+8iQotICoqV2ViRmV0Y2jmqKnpmZAqKjogYH4vLmNsYXVkZS9zZXR0aW5ncy5qc29uYCDjga4gYWxsb3cg44GrIFdlYkZldGNo44O7V2ViU2VhcmNoIOi/veWKoOa4iOOBvwotICoq6KmV5L6h44OV44Os44O844Og44Ov44O844KvIHYzLjAqKjogSUNF5buD5q2i4oaSU0NBTEUtTe+8iOS6i+alreani+mAoDYw54K5ICsgTVBW5biC5aC05oCnMzDngrkgPSA5MOeCuea6gOeCue+8iQogIC0g5by35Yi25Y205LiLM+mHjeOCsuODvOODiO+8iFMrQ+KJpDE2IC8gUOi7uOKJpDMgLyBD4omkOOOBp+WNs+WNtOS4i++8iQotICoqcWFfYXV0b2hhbmRvZmYucHkqKjogY3JvbnRhYueZu+mMsuS4ruOBn+OBiCCvvIhURVJNSU5BTOaforWl6KGM5a+F6aCI77yJCi0gKipJTkZSQSBWMeizuzEz5Lu2KiI6IG5lZWRzX3Jld29yay/jgYvjgoJhcmNoaXZlZC/jgavnp7vli5XmuIjjgb8KLSAqKuWFqFBLR+WTiOizq+eNuOS4gCoqOiAxN1BLR+WFqOS7tuOBq+S6huaDheWghe+8iOe1jOWWtuS4gOmgheeItuWcqOOBv+ajoOWumuS5jOexuOS6hikKCiMjIOeiuueaq+OBruODq+ODvOODq+OBq+WkiOOBmeODu+ODquODvOODq+WHveWRiuetmumAggoKLSBDT08gZG9uZeaJv+iqjeOBr+ePveeJqeeiuuiqjeW/heimiO+8iFBBU1PjgafjgKJDT0/jgYzkuK3ouqvjgpLopovjgabjgYvjgoJkb25l5om/6KqN57uu5q2j77yJCi0gV2ViRmV0Y2jmqKnpmZDjga9zZXR0aW5ncy5qc29u44Gn566h7oCB77yIQ2xhdWRlLmFp6Kit5a6a55S76Z2i44Gn44Gv44Gq44GE77yJCi0gUUEgRGlyZWN0b3IgPSBRQeWun+ihjOODu1BBU1MvRkFJTOWIpOWumuOBruOBv+OAAmRvbmXnu7vli5XjgadENE/lieaoqQotIENvZGV444Gu5pen5LuV5qeY5pu477yIY29vX3FhX3Jldmlld19hZ2VudF9zcGVj77yJ44GuZG9uZeaoqemZkOiomOi/sOOBr1Yy44Or44O844Or44Gn5LiK5pu444GMCgojIyDnj77lnKjjga7lhKrlhYjjg4bjg7zjg54KCi0gUUHmqZ/og73jga7lrozlhajlvqnml6fvvIhQS0flrozmiJDihpJkaXNwYXRjaOapn+ani+KGkkNPT+ePvueJqeeiuuiqjeODleODreODvO+8iQotIG5lZWRzX3Jld29yay8xMuS7tuOBruaVtOeQhgotIOipleS+oeODleODrOODvOODoOODr+ODvOOCryB2My4wIOOBrumBi+eUqOmWi+Wni++8iO+8iOWPjuebiuODouODh+ODq+WAmeijnOOBruWGjeipleS+oe+8iQo=
+# AI Handoff | NS-OSV2
+
+更新日: 2026-05-30 セッション4
+
+## 役割
+
+通常時は `Codex（GPT-5.4）` が NS-OSV2 の COO として振る舞う。
+`Claude Code` と `Antigravity` は通常時は担当 role / workstream を進める specialist runner とする。
+`Codex` が limit に近い、または limit 到達時のみ、`Claude Code` か `Antigravity` が代行 COO として振る舞う。
+
+**AUDIT Director v1（独立内部監査人）**: 毎週金曜21:03（週次）・毎月最終金曜21:03（月次）にcrontab自動実行。
+現在のAUDITプロバイダー: OpenAI（gpt-5.4）。切り替えは `audit-use anthropic / openai / gemini` で可能。
+Gemini対応済み（google.genai新API・gemini-2.5-proモデル）。
+
+## セッション開始時の必須手順
+
+1. `Vault/.claude/context/` の固定6ファイルを読む（グローバルではなくVault内が正本）
+2. `03_Archives/COO_Context_履歴/` の最新 `COO_Context_*_MAIN_*.md` を読む
+3. `01_Areas/COO/ClaudeCode_Handoff_Latest.md` を読む（次にやること・設定済み事項）
+4. Board / `AI_Runner_Status_Latest.md` の latest を読む
+5. 自分の runner status を `ACTIVE` に更新する
+6. 前回の積み残しと今回の最優先を短く要約してから着手する
+
+## セッション終了時の必須手順
+
+1. 固定6ファイルを更新日含め最新化
+2. `COO_Context_YYYYMMDD_MAIN_*.md` を新規作成して残す
+3. `ClaudeCode_Handoff_Latest.md` を更新（Board実数・次セッション即実行事項）
+4. `AI_Runner_Status_Latest.md` を `LIMITED` または `IDLE` に更新
+5. remediation_log.md を更新（新規是正事項を追記）
+6. 次セッションが最短で再開できる形で残す
+
+## 次セッション即実行事項（優先順）
+
+1. 🔴 **shift_tool YAML全面書き直し**（BUN_CEOから受領した新仕様で）
+   - 仕様確認表は ClaudeCode_Handoff_Latest.md に記載
+   - シフト時間・スタッフ匿名化・配置ルール・新規スタッフ追加
+   - 完了後に動作テスト実行
+2. 🔴 **qa/30件のCOO現物確認 → done承認**（board_runner_monitor.shがQA実行中）
+3. 🟡 shift_tool 汎用化設計（YAML全面書き直し後に着手）
+
+## 確立済みシステム（セッション4で追加・変更）
+
+- **board_runner_monitor.sh**: launchd常駐稼働中（PID確認済み）。5分ごと全レーン監視。
+  - スクリプト正本: `repo/scripts/monitors/board_runner_monitor.sh`
+  - 実行コピー: `~/Library/Scripts/board_runner_monitor.sh`（TCC制限回避）
+  - **変更時は両方更新が必要**
+- **crontab**: AUDITのみ（週次・月次）。ランナー系はboard_runner_monitorに集約済み
+- **QA Director v1.1 PKG**: `01_Areas/QA/context_packages/qa_director_v1/`
+- **COO Dispatch Agent PKG**: `01_Areas/COO/context_packages/coo_dispatch_agent_v1/`
+- **評価フレームワーク v3.0**: SCALE-M（60点+30点=90点満点）
+- **shift_tool**: `northstar-os/Development/shift_tool/` にシフト自動作成ツール発見
+  - バグ修正済み（weekday_fixed実装・月末チェックバグ・診断改善）
+  - セキュリティ修正済み（スタッフ名ハードコード除去・YAML動的読み込み化）
+  - **新仕様でYAML全面書き直しが必要（次セッション最優先）**
+
+## 確立済みルール（セッション3-4確定）
+
+- COO done承認は現物確認必須（QA PASSのみでdone移動禁止）
+- board_runner_monitor.sh = ランナー本体（crontabに個別登録しない）
+- QA Director = QA実行・PASS/FAIL判定のみ。done移動はCOO専権
+- shift_tool: 本番利用前にYAML新仕様適用・動作テスト必須
+
+## 現在の優先テーマ
+
+- shift_tool YAML全面書き直し → 動作確認 → BUN_CEO手動作業を解消
+- qa/30件のCOO現物確認フロー
+- shift_tool 汎用化（他施設展開・商品化の基盤）
