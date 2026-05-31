@@ -16,18 +16,18 @@ read -p "番号を入力してください (1 または 2): " choice
 
 case $choice in
     1)
-        cat << 'EOF' > "$CONFIG_PATH"
+        cat << EOF > "$CONFIG_PATH"
 {
   "mcpServers": {
     "google-calendar": {
-      "command": "/Users/fuminariaksse/google-calendar-mcp/bin/npx",
+      "command": "$HOME/google-calendar-mcp/bin/npx",
       "args": [
         "-y",
         "@cocal/google-calendar-mcp"
       ],
       "env": {
-        "GOOGLE_OAUTH_CREDENTIALS": "/Users/fuminariaksse/.gemini/antigravity/gcp-oauth.keys.json",
-        "PATH": "/Users/fuminariaksse/google-calendar-mcp/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        "GOOGLE_OAUTH_CREDENTIALS": "$HOME/.gemini/antigravity/gcp-oauth.keys.json",
+        "PATH": "$HOME/google-calendar-mcp/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
       }
     }
   }
@@ -36,21 +36,21 @@ EOF
         echo "Google Calendar用の設定を適用しました。"
         ;;
     2)
-        cat << 'EOF' > "$CONFIG_PATH"
+        cat << EOF > "$CONFIG_PATH"
 {
   "mcpServers": {
     "google-drive": {
-      "command": "/Users/fuminariaksse/google-calendar-mcp/bin/npx",
+      "command": "$HOME/google-calendar-mcp/bin/npx",
       "args": [
         "-y",
         "@piotr-agier/google-drive-mcp",
         "start"
       ],
       "env": {
-        "GOOGLE_DRIVE_OAUTH_CREDENTIALS": "/Users/fuminariaksse/.gemini/antigravity/gcp-oauth.keys.json",
-        "GOOGLE_OAUTH_CREDENTIALS": "/Users/fuminariaksse/.gemini/antigravity/gcp-oauth.keys.json",
-        "GOOGLE_DRIVE_MCP_TOKEN_PATH": "/Users/fuminariaksse/.config/google-drive-mcp/tokens.json",
-        "PATH": "/Users/fuminariaksse/google-calendar-mcp/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        "GOOGLE_DRIVE_OAUTH_CREDENTIALS": "$HOME/.gemini/antigravity/gcp-oauth.keys.json",
+        "GOOGLE_OAUTH_CREDENTIALS": "$HOME/.gemini/antigravity/gcp-oauth.keys.json",
+        "GOOGLE_DRIVE_MCP_TOKEN_PATH": "$HOME/.config/google-drive-mcp/tokens.json",
+        "PATH": "$HOME/google-calendar-mcp/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
       }
     }
   }

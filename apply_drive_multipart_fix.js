@@ -44,15 +44,36 @@ const getReq = http.request({
         foundLineNode = true;
         return {
           ...n,
-          "onError": "continueRegular"
+          "onError": "continueRegularOutput"
         };
       }
       return n;
     });
     if (foundLineNode) {
-      console.log("[INFO] 'LINE通知' ノードに onError: 'continueRegular' を適用しました。");
+      console.log("[INFO] 'LINE通知' ノードに onError: 'continueRegularOutput' を適用しました。");
     } else {
       console.log("[WARN] 'LINE通知' ノードが見つかりませんでした。");
+    }
+
+    // 成果物管理追記ノードの jsonBody にハイパーリンク数式を適用
+    let foundArtifactNode = false;
+    wf.nodes = wf.nodes.map(n => {
+      if (n.name === "📦成果物管理追記") {
+        foundArtifactNode = true;
+        return {
+          ...n,
+          "parameters": {
+            ...n.parameters,
+            "jsonBody": "={{ JSON.stringify({values: [[new Date(Date.now()+9*60*60*1000).toISOString().slice(0,16).replace(\"T\",\" \"),\"MKT\",($json.id || $json.driveId) ? `=HYPERLINK(\"https://drive.google.com/file/d/${$json.id || $json.driveId}/view\", \"${$json.filename || $json.name || '(ファイル名取得失敗)'}\")` : ($json.filename || $json.name || \"(ファイル名取得失敗)\"),\"✅ 保存完了\",\"-\",\"MKT_PRタイムズ\",$json.id || $json.driveId || \"-\",\"MKT Drive\",\"\",\"\"]]}) }}"
+          }
+        };
+      }
+      return n;
+    });
+    if (foundArtifactNode) {
+      console.log("[INFO] '📦成果物管理追記' ノードの jsonBody にハイパーリンク数式を適用しました。");
+    } else {
+      console.log("[WARN] '📦成果物管理追記' ノードが見つかりませんでした。");
     }
 
     // 2. 不要なノードを除去（置換対象のノードを削除）
@@ -82,6 +103,10 @@ const getReq = http.request({
             {
               "name": "Content-Type",
               "value": "application/json"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
             }
           ]
         },
@@ -90,15 +115,7 @@ const getReq = http.request({
         "rawContentType": "application/json",
         // 完璧な n8n Expression を構築する
         "body": "={{ JSON.stringify({ name: $('Drive保存準備（成果物整形）').first().json.filename, parents: ['" + driveFolderId + "'], mimeType: 'text/plain' }) }}",
-        "options": {
-          "response": {
-            "response": {
-              // エラーを握り潰さないように neverError: false にする！
-              "neverError": false,
-              "responseFormat": "json"
-            }
-          }
-        }
+        "options": {}
       }
     };
     
@@ -122,6 +139,10 @@ const getReq = http.request({
             {
               "name": "Content-Type",
               "value": "text/plain; charset=UTF-8"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
             }
           ]
         },
@@ -129,15 +150,7 @@ const getReq = http.request({
         "contentType": "raw",
         "rawContentType": "text/plain; charset=UTF-8",
         "body": "={{ $('Drive保存準備（成果物整形）').first().json.reportContent }}",
-        "options": {
-          "response": {
-            "response": {
-              // エラーを握り潰さないように neverError: false にする！
-              "neverError": false,
-              "responseFormat": "json"
-            }
-          }
-        }
+        "options": {}
       }
     };
     

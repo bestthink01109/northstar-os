@@ -1,6 +1,6 @@
 # NS-OS 全体構成図
-**最終更新: 2026-05-17**
-**更新方法: COOがこのファイルを編集してcommit**
+最終更新: 2026-05-22（DeepSeek認証共通化修復・ナレッジ資産化完了）
+更新方法: COOがこのファイルを編集してcommit
 
 ---
 
@@ -155,6 +155,7 @@ GitHub連携（チケット自動取得）: 🔄 別セッション構築中
 | データ・成果物・レポート・COO_Context | Google Drive |
 | コード・マニュアル・DEVチケット | GitHub |
 | APIキー・認証情報 | ローカルのみ（push禁止） |
+| 永続ナレッジ・System QAエラーナレッジ | knowledge/systemQA/（GitHub保管） |
 | 草稿（QA前） | Drive: Reports/_agent_outputs/ |
 | 完成品（QA済み） | Drive: Reports/_final_outputs/ → 各部門フォルダ |
 

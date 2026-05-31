@@ -1,5 +1,5 @@
 # NorthStar OS — レポートフォーム統一ガイド
-# 更新日: 2026-05-23
+# 更新日: 2026-05-20
 # 管理者: COO
 
 ---
@@ -102,19 +102,26 @@ knowledge/ / skill/references/ / distilled_*.md に蓄積された知識
 knowledge/
 ├── README.md              ← 運用ルール・登録フロー
 ├── n8n/                   ← n8nワークフロー関連
+│   ├── oauth_unified_pattern.md      ← OAuth一括管理
+│   ├── http_request_json_body.md     ← HTTP Request JSON Body
+│   └── error_workflow_setup.md       ← エラーWF設定
 ├── api/                   ← 外部API連携
-├── ops/                   ← 労務・OPS関連
+│   ├── drive_multipart_upload.md     ← Driveアップロード
+│   └── line_messaging_api.md         ← LINE通知
+├── ops/                   ← 労務・OPS関連（将来追加）
 ├── debug/                 ← デバッグ共通
-├── dev/                   ← 開発パターン
-├── infra/                 ← インフラ
+│   └── credential_rotation.md        ← Credential更新
+├── dev/                   ← 開発パターン（将来追加）
+├── infra/                 ← インフラ（将来追加）
 ├── mkt/                   ← MKT実行知見（自動収集WF稼働後に蓄積）
+│   └── content_automation/           ← コンテンツ量産パターン
 ├── sales/                 ← SALES実行知見（PRタイムズ・Playwright結果）
 ├── pkm/                   ← Obsidian・NotebookLM活用パターン
-├── kaigo/                 ← 介護・障害福祉ドメイン知識
+├── kaigo/                 ← 介護・障害福祉ドメイン知識（fin-skill連携）
 └── youtube-insights/      ← YouTube週次収集の蒸留ナレッジ（Layer 2）
-    ├── ai_agent/
-    ├── mkt_sales/
-    └── pkm/
+    ├── ai_agent/          ← AIエージェント設計・Claude技術系
+    ├── mkt_sales/         ← MKT・SALES手法系
+    └── pkm/               ← PKM・Obsidian・個人成長系
 ```
 
 ### skill/references/ との役割分担（重要）
@@ -129,11 +136,11 @@ knowledge/ と Claude Code の skill/references/ は **別物**。混同しな�
 **Type D の `ref_skills` に書く際は両方を参照できる：**
 ```yaml
 ref_skills:
-  - knowledge/n8n/oauth_unified_pattern           # Antigravity knowledge/
+  - knowledge/n8n/oauth_unified_pattern        # Antigravity knowledge/
   - skill/fin-skill/references/shogukaizen_rules  # Claude Code skill/references/
 ```
 
-### 登録済みナレッジ一覧（2026-05-23現在）
+### 登録済みナレッジ一覧（2026-05-20現在）
 
 | パターン名 | 分野 | 信頼度 | 概要 |
 |-----------|------|--------|------|
@@ -160,6 +167,8 @@ ref_skills:
 
 ## WFプロンプトへの統一フォーム適用（Phase 3）
 
+n8n WFのプロンプトを統一フォームに準拠させる:
+
 ### 対象WFとType対応
 
 | WF | WF ID | 適用Type |
@@ -172,7 +181,21 @@ ref_skills:
 | FIN月次レポート | uxIDllsGUiDilADI | Type A |
 | 部門日次報告 | 4LTj5vfwCcDqVUKc | Type A |
 | System QA夜間 | dSItw958pDfl3fMs | Type C（障害検知時） |
-| YouTube自動ナレッジ収集（新設） | — | Type E |
+
+### プロンプト改修方針
+
+各WFのAI呼び出しプロンプトに以下を追加:
+
+```
+## 出力フォーマット指定
+
+以下のフォーマットに従って出力してください。省略禁止。
+
+[Type A/B/C/Eのテンプレート構造を挿入]
+
+特に「💡 今回のナレッジ」セクションは必ず記述してください。
+新規ナレッジがない場合は「新規ナレッジなし」と明記してください。
+```
 
 ---
 
@@ -185,3 +208,16 @@ ref_skills:
 | 再現可能性 | 第三者が読んで同じ作業を再現できる粒度 |
 | ナレッジ記述 | 💡セクションは「なし」でも記述必須。空欄禁止 |
 | 成果物保存 | Google Drive Reports/[部門]/ に保存してから完了 |
+
+---
+
+## Claude Code スキル登録
+
+knowledge/ に蓄積されたパターンのうち、以下の条件を満たすものはClaude Codeのskillとしても登録可能:
+
+- 繰り返し実施するデバッグ手順
+- n8nの典型的な修正パターン
+- レポート生成の定型処理
+- COO判断の定型ロジック
+
+登録場所: Claude Codeのメモリ / CLAUDE.md / .claude/ 配下

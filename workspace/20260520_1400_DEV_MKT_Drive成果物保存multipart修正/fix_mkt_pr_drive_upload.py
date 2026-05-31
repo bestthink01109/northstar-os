@@ -33,35 +33,40 @@ OAUTH_WEBHOOK_URL = "http://localhost:5678/webhook/google-oauth-token"
 
 def get_api_key() -> str:
     """
-    /root/n8n-api.sh から APIキーを取得する。
-    ローカル実行時は環境変数 N8N_API_KEY があればそちらを優先。
+    環境変数 N8N_API_KEY または /root/n8n-api.sh を直接パースして APIキーを取得する。
     """
     if os.environ.get("N8N_API_KEY"):
         return os.environ["N8N_API_KEY"].strip()
 
+    # 1. /root/n8n-api.sh をパースする
     api_sh = "/root/n8n-api.sh"
-    if not os.path.exists(api_sh):
-        raise FileNotFoundError(
-            f"{api_sh} が見つかりません。環境変数 N8N_API_KEY を設定するか、"
-            "VPS上で実行してください。"
-        )
-
-    result = subprocess.run(
-        ["bash", "-c", f"source {api_sh} && echo $N8N_API_KEY"],
-        capture_output=True, text=True, timeout=10
-    )
-    key = result.stdout.strip()
-    if not key:
-        # ファイルを直接パースして KEY= の行を探す
+    if os.path.exists(api_sh):
         with open(api_sh, "r") as f:
             for line in f:
                 line = line.strip()
-                if "N8N_API_KEY" in line and "=" in line:
-                    key = line.split("=", 1)[1].strip().strip('"').strip("'")
-                    break
-    if not key:
-        raise ValueError(f"{api_sh} から APIキーを取得できませんでした。")
-    return key
+                if "N8N_API_KEY" in line and "=" in line and not line.startswith("#"):
+                    # 例: N8N_API_KEY="xxx"
+                    parts = line.split("=", 1)
+                    key = parts[1].strip().strip('"').strip("'")
+                    if key:
+                        return key
+
+    # 2. フォールバックとして /root/.config/northstar/keys.sh をパースする
+    keys_sh = "/root/.config/northstar/keys.sh"
+    if os.path.exists(keys_sh):
+        with open(keys_sh, "r") as f:
+            for line in f:
+                line = line.strip()
+                if "N8N_API_KEY" in line and "=" in line and not line.startswith("#"):
+                    parts = line.split("=", 1)
+                    key = parts[1].strip().strip('"').strip("'").replace("export ", "")
+                    if key:
+                        return key
+
+    raise ValueError(
+        "APIキーを取得できませんでした。環境変数 N8N_API_KEY を設定するか、"
+        "/root/n8n-api.sh または /root/.config/northstar/keys.sh にキーを配置してください。"
+    )
 
 
 def n8n_request(method: str, path: str, api_key: str, body: Any = None) -> Any:

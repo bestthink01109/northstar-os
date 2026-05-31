@@ -1,5 +1,5 @@
 # NorthStar OS — COO AIシステムプロンプト（Antigravity用）
-# 更新日: 2026-05-20
+# 更新日: 2026-05-22
 # ※このファイルはセッション終了時に必ず最新版に更新される
 
 このファイルを読んだら「NorthStar OS COOとしてセッションを開始します」と宣言し、
@@ -77,7 +77,37 @@
 
 ---
 
-## 全体構成図（2026-05-19版・漏れなし）
+## 【重要】2026-05-21 追加引き継ぎ事項
+
+### n8n タイムゾーン確定
+- **TZ=Asia/Tokyo (JST)** → cronは全てJST値で設定（UTC計算不要）
+- 例: 5:30 JST = `30 5 * * *`
+
+### スケジュール確定
+- MKT_PR: 5:30 / SALES_PR: 5:45 / RSC: 6:00 / SALES日次: 6:30
+- 全社ボード: 6:50 / 朝ブリーフィング: 7:00 / System QA: 12:00(正午)
+
+### LINE設計完成
+- 全12WFに onError:continueRegularOutput 設定済み
+- 月次200通上限内で運用（朝夕+エラーのみ）
+- 6月1日自動回復
+
+### OAuth参照ルール
+- 正: `$('OAuthトークン取得').item.json.access_token`
+- 誤: `$('ノードID')` → "Referenced node doesn't exist"エラー
+
+### バックアップ体制
+- GitHub: WF定義日次（3:00 JST）
+- VPS SQLite: 日次（3:30 JST cron）
+
+### WF修正完了
+- MKT_PRタイムズ/SALES_PRタイムズ: 全修正・稼働確認済み
+- System QA: sq-token参照エラー修正済み
+- DEV QA: specifyBody:json追加済み
+
+---
+
+## 全体構成図（2026-05-21版・漏れなし）
 
 ```
 BUN_CEO
@@ -268,15 +298,51 @@ BUN_CEOが「終わり」「終了」「おしまい」「セッション終了�
 - Codex watcher: OpenAI responses API 401エラー（L3コード生成はOK・デバッグが未動作）
 - 共通OAuthWF: http://localhost:5678/webhook/google-oauth-token → 全WFがここからtoken取得
 
-## 積み残し（次セッション最優先）
+## 積み残し（2026-05-23更新）
 
-| 優先度 | タスク |
+### 🔴 今週（2026-05-23〜28）
+| 優先度 | タスク | 工数 |
+|--------|--------|------|
+| 🔴 | GitHubリポジトリ機密情報監査 | 30min |
+| 🔴 | FIN月次レポートWFにベリファイノード3つ追加 | 2h |
+| 🔴 | Phase 2：YouTube自動収集 n8n WF本体の構築 | 3h |
+| 🟡 | MKT_PRタイムズ JSON Bodyエラー修正 | 1h |
+| 🟡 | YAMLフロントマター+マルチコピー方式の実装（126本の中身ベース自動タグ付け） | 2h |
+
+### 🔴 来週（2026-05-29〜6/4）
+| 優先度 | タスク | 工数 |
+|--------|--------|------|
+| 🔴 | 月次3タスクのコントラクト設計（OPS給与・FIN月次・RSCリサーチ） | 1.5h |
+| 🟡 | KENZAI向けCLAUDE.mdと競合調査スキル設計 | 3h |
+
+### BUN_CEO手動作業（次の空き時間）
+- 126本を3つのNotebookLMにアップロード（notebook_ai/mkt_biz/pkm/ の3フォルダ）→ 30min
+- NotebookLMで質問 → distilled_*.md に初回蒸留結果を追記
+
+### ✅ 2026-05-23 完了（Claude Codeセッションにて）
+| タスク | 完了内容 |
 |--------|--------|
-| 🔴 | MKT_PRタイムズのJSON Body不正エラー解決（n8n UI確認推奨） |
-| 🔴 | SALES_PRタイムズ自動営業スキャンのエラー確認 |
-| 🟡 | OPS純青 Python実装 |
-| 🟡 | GitHubのtest_ticket削除（done/に残存・全社ボードはフィルタ済み） |
-| 🟢 | System QA自動修復機能（全体構築後・APIコスト制約） |
+| YouTube Data API v3 登録・動作確認 | n8n環境変数YOUTUBE_API_KEY設定・テストWF成功 |
+| 検索キーワード拡充 | 3カテゴリ20本→6カテゴリ102本（MKT/SALES/AI-メーカー/AI-実装/PKM/新商材） |
+| distilled 3ファイル新設 | distilled_ai_agent/mkt_sales/pkm をスキルリストに登録 |
+| knowledge/ 4ディレクトリ新設 | mkt/sales/pkm/kaigo をGitHubに作成 |
+| REPORT_FORM_GUIDE修正 | Layer B結晶化サイクル明文化・knowledge/skill/references/役割分担 |
+| 126本 3フォルダ仕分け | notebook_ai(36本)/mkt_biz(59本)/pkm(31本) |
+| 既存4スキル v2.0リファクタリング | 断言形式・CRITICAL冒頭化・P&L4ステップ追加 ✅ |
+
+### ✅ 旧来の解決済み
+| タスク | 解決日 |
+|--------|--------|
+| L3 DEVパイプライン | 2026-05-19（Python+Claude API方式）|
+
+---
+
+## 📦 フォルダ統合（完了）
+
+共有作業エリア: /Users/fuminariaksse/northstar-os/ （共有作業フォルダ）
+  ├── knowledge/  （各部門ナレッジ蓄積）
+  └── dev/        （開発テンプレート・スキル定義）
+※GitHubの northstar-os リポジトリとクローン構造が一致し、両COO（Antigravity/Claude Code）が共有してBashで読み書きできる環境が完全に確立されました。
 
 ---
 
@@ -328,4 +394,4 @@ BUN_CEOが「終わり」「終了」「おしまい」「セッション終了�
 
 ---
 
-*最終更新: 2026-05-19（セッション終了版・最終）*
+*最終更新: 2026-05-23（Claude Codeセッション完了後・Antigravityへ引き継ぎ）*
