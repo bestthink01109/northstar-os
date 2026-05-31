@@ -1,6 +1,6 @@
 # AI Handoff | NS-OSV2
 
-更新日: 2026-05-30 セッション4
+更新日: 2026-05-31 セッション5
 
 ## 役割
 
@@ -32,37 +32,44 @@ Gemini対応済み（google.genai新API・gemini-2.5-proモデル）。
 
 ## 次セッション即実行事項（優先順）
 
-1. 🔴 **shift_tool YAML全面書き直し**（BUN_CEOから受領した新仕様で）
-   - 仕様確認表は ClaudeCode_Handoff_Latest.md に記載
-   - シフト時間・スタッフ匿名化・配置ルール・新規スタッフ追加
-   - 完了後に動作テスト実行
-2. 🔴 **qa/30件のCOO現物確認 → done承認**（board_runner_monitor.shがQA実行中）
-3. 🟡 shift_tool 汎用化設計（YAML全面書き直し後に着手）
+1. 🔴 **qa/COO現物確認の完了・done/needs_rework移動**（詳細はClaudeCode_Handoff_Latest.md）
+   - PASS確定19件 → done/に移動
+   - needs_rework確定6件 → needs_rework/に移動
+   - 未確認3件（0004/0005/0007）→ 現物確認してから判定
+2. 🔴 **shift_tool: 6月実データYAML作成 → 動作テスト**
+   - 3月YAMLは希望休データが実際と異なる可能性あり → 6月の実データで再実施
+   - v2 YAMLはconfigs/shift_config_202603_v2.yaml に作成済み（構造は正しい）
+   - ソルバー更新済み（backup_only / skip_consecutive_limit 実装済み）
+3. 🟡 shift_tool 汎用化設計（6月テスト成功後に着手）
 
-## 確立済みシステム（セッション4で追加・変更）
+## 確立済みシステム（セッション5で追加・変更）
 
-- **board_runner_monitor.sh**: launchd常駐稼働中（PID確認済み）。5分ごと全レーン監視。
+- **board_runner_monitor.sh**: launchd常駐稼働・TCC問題解決済み
+  - `/bin/bash` にフルディスクアクセス付与済み（BUN_CEO操作）
+  - qa/30件の検知・QA実行を開始確認済み
   - スクリプト正本: `repo/scripts/monitors/board_runner_monitor.sh`
-  - 実行コピー: `~/Library/Scripts/board_runner_monitor.sh`（TCC制限回避）
+  - 実行コピー: `~/Library/Scripts/board_runner_monitor.sh`
   - **変更時は両方更新が必要**
-- **crontab**: AUDITのみ（週次・月次）。ランナー系はboard_runner_monitorに集約済み
-- **QA Director v1.1 PKG**: `01_Areas/QA/context_packages/qa_director_v1/`
-- **COO Dispatch Agent PKG**: `01_Areas/COO/context_packages/coo_dispatch_agent_v1/`
-- **評価フレームワーク v3.0**: SCALE-M（60点+30点=90点満点）
-- **shift_tool**: `northstar-os/Development/shift_tool/` にシフト自動作成ツール発見
-  - バグ修正済み（weekday_fixed実装・月末チェックバグ・診断改善）
-  - セキュリティ修正済み（スタッフ名ハードコード除去・YAML動的読み込み化）
-  - **新仕様でYAML全面書き直しが必要（次セッション最優先）**
+- **crontab**: AUDITのみ。ランナー系はboard_runner_monitorに集約済み
+- **shift_tool v2**: `configs/shift_config_202603_v2.yaml` 作成済み
+  - シフト時間修正済み（A:9-17, B:7-15）
+  - スタッフ全匿名化済み
+  - backup_only / skip_consecutive_limit をソルバーに実装済み
+  - 6月実データで再テスト予定
+- **QA Director v1.1 PKG / COO Dispatch Agent PKG**: 稼働中
+- **評価フレームワーク v3.0**: SCALE-M（事業構造60点+市場性30点=90点満点）
 
-## 確立済みルール（セッション3-4確定）
+## 確立済みルール（セッション3-5確定）
 
 - COO done承認は現物確認必須（QA PASSのみでdone移動禁止）
 - board_runner_monitor.sh = ランナー本体（crontabに個別登録しない）
 - QA Director = QA実行・PASS/FAIL判定のみ。done移動はCOO専権
-- shift_tool: 本番利用前にYAML新仕様適用・動作テスト必須
+- shift_tool: 6月実データYAMLで動作確認してから本番利用
+- launchd停止: `launchctl unload ~/Library/LaunchAgents/com.northstar.board-runner-monitor.plist`
+- launchd再開: `launchctl load ~/Library/LaunchAgents/com.northstar.board-runner-monitor.plist`
 
 ## 現在の優先テーマ
 
-- shift_tool YAML全面書き直し → 動作確認 → BUN_CEO手動作業を解消
-- qa/30件のCOO現物確認フロー
+- qa/現物確認完了 → board整理（done/needs_rework振り分け）
+- shift_tool 6月実データテスト → BUN_CEO手動作業を解消
 - shift_tool 汎用化（他施設展開・商品化の基盤）
