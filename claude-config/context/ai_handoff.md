@@ -1,6 +1,6 @@
 # AI Handoff | NS-OSV2
 
-更新日: 2026-06-01 セッション6
+更新日: 2026-06-03 Claude Code acting COO セッション
 
 ## 役割
 
@@ -50,11 +50,32 @@ CODEX がセッション開始時に `Vault/logs/runner_owner.json` を以下の
 5. remediation_log.md を更新（新規是正事項を追記）
 6. 次セッションが最短で再開できる形で残す
 
-## 次セッション即実行事項（優先順）
+## 次セッション即実行事項（優先順）【2026-06-03更新】
 
-1. 🔴 **needs_rework/6件の再実行依頼** — runner が検知・agents に dispatch
-2. 🔴 **shift_tool: 6月実データYAML作成 → 動作テスト**（BUN_CEO から6月データ受領待ち）
-3. 🟡 shift_tool 汎用化設計（6月テスト成功後に着手）
+### 🔴 最優先: 商材開発（BUN_CEO直接指示）
+1. BizDev/MKT/SALES の三部門PKG guardrailsに以下を追加してからdispatch
+   - 「既に競合が溢れているものは出さない」
+   - 「三位一体（売上アップ×管理工数削減×コストダウン）を全て満たすこと」
+   - 「市場マトリックス（薄利多売 vs 少量高利益×ニッチ）を明示すること」
+   - 「差別化軸を必ず記述すること。汎用的な答えは不合格」
+2. 「売れる商品の定義」から0ベースでBizDev/MKT三部門合議で再設計
+3. 20260603_0005をneeds_reworkに差し戻し（競合分析不足）
+
+### 🔴 今月50万円達成・KENZAI②
+4. 20260603_0001（KENZAI②仕様書）→ Claude Code subagentにdispatch
+5. 20260603_0003（SALES PKG全面強化）→ Claude Code subagentにdispatch
+6. 20260603_0002（RSC 0ベース見込み客リスト）→ Antigravityにdispatch
+
+### 🟡 既存積み残し
+7. needs_rework/旧6件の再実行
+8. INFRA remediation（0045/0804/1219）
+9. shift_tool 6月実データYAML作成
+
+## 本日（2026-06-03）BUN_CEO指示の核心
+- 「正しい思考×正しい商品×正しい方法×正しい販売＝必ず売れる」を証明する
+- 0ベースで実績を作り仕組み化の基礎にする
+- PKGのスペシャリスト性を常に問う（汎用的な答えはスペシャリストではない）
+- SALES以外の部門のみ外部接触はCEO専権（SALESは外部接触OK）
 
 ## 確立済みシステム（セッション5-6で追加・変更）
 
