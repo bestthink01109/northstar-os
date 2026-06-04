@@ -1,6 +1,6 @@
 # AI Handoff | NS-OSV2
 
-更新日: 2026-06-03 Claude Code acting COO セッション
+更新日: 2026-06-04 Claude Code acting COO セッション
 
 ## 役割
 
@@ -50,65 +50,54 @@ CODEX がセッション開始時に `Vault/logs/runner_owner.json` を以下の
 5. remediation_log.md を更新（新規是正事項を追記）
 6. 次セッションが最短で再開できる形で残す
 
-## 次セッション即実行事項（優先順）【2026-06-03更新】
+## 次セッション即実行事項（優先順）【2026-06-04更新】
 
-### 🔴 最優先: 商材開発（BUN_CEO直接指示）
-1. BizDev/MKT/SALES の三部門PKG guardrailsに以下を追加してからdispatch
-   - 「既に競合が溢れているものは出さない」
-   - 「三位一体（売上アップ×管理工数削減×コストダウン）を全て満たすこと」
-   - 「市場マトリックス（薄利多売 vs 少量高利益×ニッチ）を明示すること」
-   - 「差別化軸を必ず記述すること。汎用的な答えは不合格」
-2. 「売れる商品の定義」から0ベースでBizDev/MKT三部門合議で再設計
-3. 20260603_0005をneeds_reworkに差し戻し（競合分析不足）
+### 🔴 最優先1: RSC実市場調査
+- 「実績ゼロ・顧客ゼロの新規立ち上げ会社が今月50万円を作るための市場はどこか」
+- RSCにWebSearch権限を確認してからdispatch
+- 完了後→BizDev仮説→MKT戦略→BUN_CEO提示の順で実行
 
-### 🔴 今月50万円達成・KENZAI②
-4. 20260603_0001（KENZAI②仕様書）→ Claude Code subagentにdispatch
-5. 20260603_0003（SALES PKG全面強化）→ Claude Code subagentにdispatch
-6. 20260603_0002（RSC 0ベース見込み客リスト）→ Antigravityにdispatch
+### 🔴 最優先2: KENZAI② needs_rework修正
+- 0001チケット：仕様書の業種記述を「建設業」→「多業種対応（建設・介護・小売等）」に修正
+- LINE無料プラン200通/月制限についてBUN_CEOに確認してから実装フェーズへ
 
-### 🟡 既存積み残し
-7. needs_rework/旧6件の再実行
-8. INFRA remediation（0045/0804/1219）
-9. shift_tool 6月実データYAML作成
+### 🟡 優先: SALES PKG COO現物確認
+- 0003はQA_PASS済み。COOビジネス判断でdone or needs_rework決定
 
-## 本日（2026-06-03）BUN_CEO指示の核心
-- 「正しい思考×正しい商品×正しい方法×正しい販売＝必ず売れる」を証明する
-- 0ベースで実績を作り仕組み化の基礎にする
-- PKGのスペシャリスト性を常に問う（汎用的な答えはスペシャリストではない）
+### 🟡 継続
+- 0002 RSC見込み客リスト（商材確定後に対象業種更新してdispatch）
+- 0004 LINE OAシナリオ（SALES PKG done後）
+- 20260604_0001 OPS障害福祉フォローアップ
+- 2318 YouTube signal（WebFetch権限問題の解決策検討）
+
+## BUN_CEO確認必須事項（次セッション冒頭）
+- LINE無料プラン200通/月制限→KENZAI②実装前に有料プラン要否の判断
+
+## 2026-06-04 確定ルール（BUN_CEOフィードバック）
+- 現物確認 = QA技術確認 + COOビジネス判断の両輪（QA PASSのゴム印禁止）
+- COO自律判断範囲の作業でBUN_CEOへの確認は禁止
+- 常時subagentを動かして自律進行（BUN_CEOが対話していなくても動く）
+- board_runner_monitor.sh：部門別ルーティング版で稼働中
+  - RSC/BizDev/MKT → Antigravity_Assignment_Latest.md
+  - DEV/INFRA/QA/OPS/SALES → claude --print + PKG指定
+- 「0ベース」= 実績ゼロ・顧客ゼロの新規立ち上げ会社が主語
+- RSC調査データなしにMKTを動かすことは禁止（プロセス順序の厳守）
 - SALES以外の部門のみ外部接触はCEO専権（SALESは外部接触OK）
 
-## 確立済みシステム（セッション5-6で追加・変更）
+## 確立済みシステム
 
-- **board_runner_monitor.sh**: launchd常駐稼働・TCC問題解決済み
-  - `/bin/bash` にフルディスクアクセス付与済み（BUN_CEO操作）
+- **board_runner_monitor.sh**: launchd常駐稼働・変化検知型・部門別ルーティング
   - スクリプト正本: `repo/scripts/monitors/board_runner_monitor.sh`
   - 実行コピー: `~/Library/Scripts/board_runner_monitor.sh`
-  - **変更時は両方更新が必要**
-- **Runner 自動切り替え（Heartbeat ファイル方式）**:
-  - ファイル: `Vault/logs/runner_owner.json`
-  - CODEX 起動時: `owner: codex` + `expires_at` を設定するだけで自動切り替え
-  - expires_at 経過後: Claude Code runner が自動復帰
-- **crontab**: AUDITのみ。ランナー系はboard_runner_monitorに集約済み
-- **AUDIT Director v1**: crontab独立稼働。Claude Code / CODEX の状態に無関係
-- **shift_tool v2**: `configs/shift_config_202603_v2.yaml` 作成済み（6月実データで再テスト予定）
+  - RSC/BizDev/MKT → Antigravity_Assignment_Latest.md に追記
+  - DEV/INFRA/QA/OPS/SALES → claude --print + PKGパス指定
+- **Runner 自動切り替え**: `Vault/logs/runner_owner.json` で制御
+- **AUDIT Director v1**: crontab独立稼働
 - **QA Director v1.1 PKG / COO Dispatch Agent PKG**: 稼働中
-- **評価フレームワーク v3.0**: SCALE-M（事業構造60点+市場性30点=90点満点）
 
-## 確立済みルール（セッション3-6確定）
+## 確立済みルール
 
 - COO done承認は現物確認必須（QA PASSのみでdone移動禁止）
-- board_runner_monitor.sh = ランナー本体（crontabに個別登録しない）
+- 現物確認 = QA技術適合確認 + COOビジネス判断（両輪）
 - QA Director = QA実行・PASS/FAIL判定のみ。done移動はCOO専権
-- shift_tool: 6月実データYAMLで動作確認してから本番利用
-- launchd停止: `launchctl unload ~/Library/LaunchAgents/com.northstar.board-runner-monitor.plist`
-- launchd再開: `launchctl load ~/Library/LaunchAgents/com.northstar.board-runner-monitor.plist`
-- **runner 自動切り替え**: `Vault/logs/runner_owner.json` の `owner` と `expires_at` で制御
-  - CODEX が runner を持つ → `owner: codex` + `expires_at` を設定
-  - expires_at 経過後 → Claude Code runner が自動復帰（手動操作不要）
-
-## 現在の優先テーマ
-
-- needs_rework/6件の再実行 → Board クリーン化
-- shift_tool 6月実データテスト → BUN_CEO手動作業を解消
-- shift_tool 汎用化（他施設展開・商品化の基盤）
-- CODEX 復帰対応: runner_owner.json で自動切り替え済み
+- runner 自動切り替え: runner_owner.json の owner と expires_at で制御
