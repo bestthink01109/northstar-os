@@ -1,6 +1,6 @@
 # AI Handoff | NS-OSV2
 
-更新日: 2026-06-04 Claude Code acting COO セッション
+更新日: 2026-06-05 Claude Code acting COO セッション
 
 ## 役割
 
@@ -50,54 +50,70 @@ CODEX がセッション開始時に `Vault/logs/runner_owner.json` を以下の
 5. remediation_log.md を更新（新規是正事項を追記）
 6. 次セッションが最短で再開できる形で残す
 
-## 次セッション即実行事項（優先順）【2026-06-04更新】
+## 次セッション即実行事項（優先順）【2026-06-05更新】
 
-### 🔴 最優先1: RSC実市場調査
-- 「実績ゼロ・顧客ゼロの新規立ち上げ会社が今月50万円を作るための市場はどこか」
-- RSCにWebSearch権限を確認してからdispatch
-- 完了後→BizDev仮説→MKT戦略→BUN_CEO提示の順で実行
+### 🔴 最優先1: 商材開発フロー継続（BizDev STEP3 → market_intelligence → BUN_CEO提示）
+- BizDev STEP3チケット（20260605_BizDev_market_intelligence_step3_001）がqa/にある
+- QAチケットがboard_runner_monitorで自動生成→QA Director実行待ち
+- 完了後COO現物確認 → market_intelligence_v1によるTOP5候補の競合マッピング・参入余地評価
+- 評価後BUN_CEOに商材候補を提示して方向性を確認
 
-### 🔴 最優先2: KENZAI② needs_rework修正
-- 0001チケット：仕様書の業種記述を「建設業」→「多業種対応（建設・介護・小売等）」に修正
-- LINE無料プラン200通/月制限についてBUN_CEOに確認してから実装フェーズへ
+### 🔴 最優先2: MKT人格活用（market_intelligence完了後）
+- 市場分析完了後にoffer_strategist_v1 + revenue_operator_v1で商材設計
+- gary_vee / direct_response_writerはさらに商材確定後
 
-### 🟡 優先: SALES PKG COO現物確認
-- 0003はQA_PASS済み。COOビジネス判断でdone or needs_rework決定
+### 🟡 継続: KENZAI② qa確認
+- 0001チケット：業種修正済み（多業種対応）・qa/にある・QAチケット自動生成待ち
+- LINE有料プラン（採算OK確認済み）→ QA PASS後にBUN_CEOへ実装フェーズ確認
 
 ### 🟡 継続
-- 0002 RSC見込み客リスト（商材確定後に対象業種更新してdispatch）
+- 0003 SALES PKG: needs_rework（商材確定後にreusable_frameworks.mdを正しい商品でリライト）
+- 0002 RSC見込み客リスト（商材確定後）
 - 0004 LINE OAシナリオ（SALES PKG done後）
+- YouTube signal: 6/4・6/5分が未生成・WebFetch権限問題継続
 - 20260604_0001 OPS障害福祉フォローアップ
-- 2318 YouTube signal（WebFetch権限問題の解決策検討）
 
-## BUN_CEO確認必須事項（次セッション冒頭）
-- LINE無料プラン200通/月制限→KENZAI②実装前に有料プラン要否の判断
+## BUN_CEO確認必須事項
+- 商材候補のBizDev STEP3完了後に方向性確認（選択肢提示予定）
 
-## 2026-06-04 確定ルール（BUN_CEOフィードバック）
-- 現物確認 = QA技術確認 + COOビジネス判断の両輪（QA PASSのゴム印禁止）
-- COO自律判断範囲の作業でBUN_CEOへの確認は禁止
-- 常時subagentを動かして自律進行（BUN_CEOが対話していなくても動く）
-- board_runner_monitor.sh：部門別ルーティング版で稼働中
-  - RSC/BizDev/MKT → Antigravity_Assignment_Latest.md
-  - DEV/INFRA/QA/OPS/SALES → claude --print + PKG指定
-- 「0ベース」= 実績ゼロ・顧客ゼロの新規立ち上げ会社が主語
-- RSC調査データなしにMKTを動かすことは禁止（プロセス順序の厳守）
-- SALES以外の部門のみ外部接触はCEO専権（SALESは外部接触OK）
+## 2026-06-05 確定ルール・変更事項
 
-## 確立済みシステム
+### QAフロー（案B正規）確定
+実行完了 → qa/移動
+→ board_runner_monitor がQAチケット（dept=QA）自動生成→todo/配置
+→ QA Director（Claude Code + qa_director_v1）が実行
+→ PASS: qa/に留置・COO承認待ち / FAIL: needs_rework/に移動
+→ COO現物確認 → done/移動
 
-- **board_runner_monitor.sh**: launchd常駐稼働・変化検知型・部門別ルーティング
-  - スクリプト正本: `repo/scripts/monitors/board_runner_monitor.sh`
-  - 実行コピー: `~/Library/Scripts/board_runner_monitor.sh`
-  - RSC/BizDev/MKT → Antigravity_Assignment_Latest.md に追記
-  - DEV/INFRA/QA/OPS/SALES → claude --print + PKGパス指定
-- **Runner 自動切り替え**: `Vault/logs/runner_owner.json` で制御
+- Antigravityはqa/の実行チケットを処理しない（qa/≠dispatch先）
+- COOが切るチケットの必須項目: qa_required: true / qa_profile: [type] / output_path:
+
+### 新規追加
+- **market_intelligence_v1 PKG**: MKT部門に追加。April Dunford×Clayton Christensen型。競合マッピング・差別化・参入余地評価を担当
+- MKT人格6構成: market_intelligence（市場分析）/ offer_strategist（価値提案）/ revenue_operator（ファネル）/ direct_response_writer（コピー）/ gary_vee（SNS）/ jay_abraham（JV）
+
+### board_runner_monitor.sh v2（案B実装済み）
+- qa/チケット: dept=QAならQA Director dispatch、それ以外はQAチケット自動生成
+- 両方更新済み: ~/Library/Scripts/ + repo/scripts/monitors/
+
+### 商材開発プロセス（確定）
+RSC（市場バズ発見・TOB/TOC）→ BizDev（ニーズフィルター）→ market_intelligence（競合・参入余地）→ offer_strategist（商材設計）→ BUN_CEO確認
+- 商材ありき禁止・市場→ニーズ→商材の順序厳守
+- 三位一体必達: 売上アップ主軸×管理工数削減×コストダウン
+- 評価軸: 手離れ×継続性×自動販売×短期販売可能×利益性×原価0or低
+
+## 確立済みシステム（セッション5-7）
+
+- **board_runner_monitor.sh v2**: launchd常駐・案B QA正規フロー実装済み
+- **market_intelligence_v1 PKG**: /01_Areas/MKT/persona_packages/market_intelligence_v1/（10ファイル）
+- **Runner 自動切り替え**: Vault/logs/runner_owner.json で制御
+- **crontab**: AUDITのみ
 - **AUDIT Director v1**: crontab独立稼働
-- **QA Director v1.1 PKG / COO Dispatch Agent PKG**: 稼働中
 
-## 確立済みルール
+## 確立済みルール（セッション3-7確定）
 
-- COO done承認は現物確認必須（QA PASSのみでdone移動禁止）
-- 現物確認 = QA技術適合確認 + COOビジネス判断（両輪）
-- QA Director = QA実行・PASS/FAIL判定のみ。done移動はCOO専権
-- runner 自動切り替え: runner_owner.json の owner と expires_at で制御
+- COO done承認は現物確認必須（QA PASSのゴム印禁止・独立ビジネス判断必須）
+- QAフロー: 案B正規（QAチケット自動生成方式）
+- 商材開発: 市場→ニーズ→商材の正規順序（商材ありき禁止）
+- 「0ベース」= 実績ゼロ・顧客ゼロ・商品ゼロ・看板ゼロの新規立ち上げ会社
+- RSC→BizDev→market_intelligence→offer_strategist→BUN_CEO確認の順序厳守
