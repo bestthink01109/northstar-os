@@ -1,6 +1,8 @@
-# AI Handoff | NS-OSV2
-
-更新日: 2026-06-05 Claude Code acting COO セッション（第2回・12:05終了）
+---
+# AI Handoff | NorthStar OS
+# 更新日: 2026-06-06（done/管理崩壊対処・board_runner修正・CODEX引き継ぎ）
+# ※このファイルはセッション終了時にCOOが必ず更新する
+---
 
 ## 役割
 
@@ -9,8 +11,6 @@
 `Codex` が limit に近い、または limit 到達時のみ、`Claude Code` か `Antigravity` が代行 COO として振る舞う。
 
 **AUDIT Director v1（独立内部監査人）**: 毎週金曜21:03（週次）・毎月最終金曜21:03（月次）にcrontab自動実行。
-現在のAUDITプロバイダー: OpenAI（gpt-5.4）。切り替えは `audit-use anthropic / openai / gemini` で可能。
-Gemini対応済み（google.genai新API・gemini-2.5-proモデル）。
 
 ## セッション開始時の必須手順
 
@@ -23,7 +23,7 @@ Gemini対応済み（google.genai新API・gemini-2.5-proモデル）。
 
 ### CODEX が runner を担当する場合（追加手順）
 
-CODEX がセッション開始時に `Vault/logs/runner_owner.json` を以下の形式で上書きすること:
+CODEXがセッション開始時に `Vault/logs/runner_owner.json` を以下の形式で上書きすること:
 
 ```json
 {
@@ -36,10 +36,9 @@ CODEX がセッション開始時に `Vault/logs/runner_owner.json` を以下の
 
 - `expires_at` はセッション想定終了時刻の **+2時間** を目安に設定する
 - セッションが延長する場合は `expires_at` を延長更新する
-- `expires_at` を過ぎると Claude Code runner が自動復帰する（手動操作不要）
 - ファイルパス: `/Users/fuminariaksse/Desktop/NS-OSV2/NS-OSV2-Brain/logs/runner_owner.json`
 
-**Claude Code runner がこのファイルを5分ごとに確認し、自動的に役割を切り替える。**
+**現在値: owner=codex, expires_at=2099-12-31（2026-06-06設定）**
 
 ## セッション終了時の必須手順
 
@@ -50,152 +49,83 @@ CODEX がセッション開始時に `Vault/logs/runner_owner.json` を以下の
 5. remediation_log.md を更新（新規是正事項を追記）
 6. 次セッションが最短で再開できる形で残す
 
-## 次セッション即実行事項（優先順）【2026-06-05 第2回更新】
+## 次セッション即実行事項（優先順）【2026-06-06 更新】
 
-### 🔴 最優先1: DEVチケット3本の実装確認（Board自動化仕組み）
-以下3本がtodo/に入っている。board_runner_monitorが自動dispatchするはず。
-- `20260605_0936_DEV_coo_done_script_build_001` → coo_done.sh実装
-- `20260605_0936_DEV_done_lane_validator_build_001` → done/バリデーション自動化
-- `20260605_0936_DEV_qa_mechanical_check_build_001` → QA機械チェック
-完了後COO現物確認 → **これらが稼働してから初めてBoard運用が正常化する**
+### 🔴 最優先（CODEX引き継ぎ後）
+| 優先 | タスク | 状態 | 担当 |
+|------|--------|------|------|
+| 🔴 | board_runner再起動 `launchctl load ~/Library/LaunchAgents/com.northstar.board-runner-monitor.plist` | 即時 | CODEX |
+| 🔴 | coo_done.sh 実装・テスト | todo/待機 | board_runner経由DEV |
+| 🔴 | qa_mechanical_check.sh テスト | todo/待機 | board_runner経由DEV |
+| 🔴 | done_lane_validator（仕組み②）完了確認 | doing/滞留 | CODEX |
+| 🔴 | qa/45件のQA Director処理 | qa/積み | board_runner自動 |
+| 🔴 | Barry（Barry-FIN/OPS）理解 | 未着手 | 次COOセッション |
 
-### 🔴 最優先2: INFRAチケット（RSCパイプライン復旧）
-- `20260605_1205_INFRA_rsc_pipeline_restore_001` → 6/3-6/5欠落対処・欠落検知自動化
+## Board現状（2026-06-06 12:17時点）
+- todo: 2件（coo_done.sh, qa_mechanical_check.sh）
+- doing: 1件（done_lane_validator）
+- qa: 45件（差し戻し36件+既存9件）
+- done: 0件（クリーンアップ完了）
+- blocked: 2件（0002, 0004）
+- archived: 105件
+- needs_rework: 1件
 
-### 🔴 最優先3: KENZAI② 正規QAフロー実行
-- qa/にある（差し戻し済み・業種修正v1.0.1確認済み・QA_PASS記録あり）
-- **正規手順**: QA Director再実行（業種修正後の再QA）→ COO現物確認（coo_done.sh使用）→ done/
-- LINE有料プラン: BUN_CEO承認済み（月額5,000円〜）
+## 2026-06-06 確定事項・ナレッジ
 
-### 🟡 継続: RSC情報源多様化
-- `20260605_1205_RSC_multi_source_intelligence_build_001` → YouTube・ニュースレター・ProductHunt等8チャネル
+### done/管理崩壊と根本原因（2026-06-06 教訓）
+- 旧QAバッチが `qa/→done/` 直接移動し、status更新失敗（Bash権限なし）
+- coo_done.sh不在のため誰でもdone/に移動できる状態だった
+- 122件中36件がstatus=qa/needs_rework/todoのままdone/に混入
+- **根本対処**: coo_done.sh（仕組み①）+ done_lane_validator（仕組み②）+ qa_mechanical_check.sh（仕組み③）
 
-### 🟡 継続
-- PILLAR①直近キャッシュ商材: BUN_CEOへの提示未実施（STEP3はqa/差し戻し中）
-- 0003 SALES PKG: needs_rework（商材確定後）
-- 0002 RSC見込み客リスト（商材確定後）
-- 0004 LINE OAシナリオ（SALES PKG done後）
-- 20260604_0001 OPS障害福祉フォローアップ
+### COO実動禁止ルール（2026-06-06 再徹底）
+- **COOは実動禁止。判断・dispatch・承認・報告のみ。**
+- qa_mechanical_check.shをCOO自身がデバッグ → BUN_CEOに指摘 → 再dispatch
+- 違反時は即キャンセルして再dispatch。ルール例外なし。
 
-## BUN_CEO確認済み事項（2026-06-05）
-- KENZAI② LINE有料プラン: **OK**
-- done管理仕組み3本の設計: **OK**
-- RSC情報源多様化8チャネル: **OK**
-- WebFetch権限: グローバルsettings.jsonに既存（変更不要・確認済み）
+### board_runner権限問題の解決策（確定）
+- **問題**: Agent toolはFleetViewが `--allowedTools mcp__*` のみ設定 → Bash不可
+- **解決**: board_runner（claude --print --permission-mode acceptEdits）経由 → Bash可
+- **設定済み**: 正本・実行コピー両方に適用済み
+- **settings.json**: mv /NS-OSV2/* と rm /tmp/* を追加済み
 
-## BUN_CEO未確認事項（次セッションで提示必須）
-- PILLAR①直近キャッシュ商材の候補選定（STEP3完了後）
-- 商材開発の方向性確認（TOB/TOC・優先順位）
+### done/管理の3本柱（仕組み）
+- 仕組み①（coo_done.sh）: QA_PASSを確認してからdone/移動 → `repo/scripts/coo/coo_done.sh`
+- 仕組み②（done_lane_validator）: 定期的にdone/内のstatus不整合を検知 → doing/に滞留中
+- 仕組み③（qa_mechanical_check.sh）: QA Director実行前の機械チェック → todo/に待機
 
-## 2026-06-05 確定ルール・変更事項
-
-### QAフロー（案B正規）確定
+## runner_owner.json 現状
+```json
+{
+  "owner": "codex",
+  "session_start": "2026-06-06T19:10:00",
+  "expires_at": "2099-12-31T23:59:59",
+  "note": "Codex が COO席を継続保持。Claude Code は COO席ではなく、現時点で specialist 運用にも含めない。"
+}
 ```
-実行完了 → qa/移動
-→ board_runner_monitor がQAチケット（dept=QA）自動生成→todo/配置
-→ QA Director（Claude Code + qa_director_v1）が実行
-→ PASS: qa/に留置・COO承認待ち / FAIL: needs_rework/に移動
-→ COO現物確認 → done/移動
+
+## launchd 操作
+```bash
+# 停止
+launchctl unload ~/Library/LaunchAgents/com.northstar.board-runner-monitor.plist
+# 再起動
+launchctl load ~/Library/LaunchAgents/com.northstar.board-runner-monitor.plist
 ```
-- Antigravityはqa/の実行チケットを処理しない（qa/≠dispatch先）
-- COOが切るチケットの必須項目: `qa_required: true` `qa_profile: [type]` `output_path:`
 
-### 新規追加
-- **market_intelligence_v1 PKG**: MKT部門に追加。April Dunford×Clayton Christensen型。競合マッピング・差別化・参入余地評価を担当
-- MKT人格6構成: market_intelligence（市場分析）/ offer_strategist（価値提案）/ revenue_operator（ファネル）/ direct_response_writer（コピー）/ gary_vee（SNS）/ jay_abraham（JV）
+## BUN_CEO確認済み事項（2026-06-06）
+- done/全件クリーンアップ: **OK**
+- settings.json allowlist拡張（mv NS-OSV2/* / rm /tmp/*）: **OK**
+- board_runner --permission-mode acceptEdits 適用: **OK**
 
-### board_runner_monitor.sh v2（案B実装済み）
-- qa/チケット: dept=QAならQA Director dispatch、それ以外はQAチケット自動生成
-- Antigravityへの注記追加: qa/移動≠QA完了・done直接移動禁止
-- 両方更新済み: `~/Library/Scripts/` + `repo/scripts/monitors/`
+## 確立済みシステム
 
-### 商材開発プロセス（確定）
-```
-RSC（市場バズ発見・TOB/TOC） → BizDev（ニーズフィルター: 売上UP×工数削減×コストダウン）
-→ market_intelligence（競合マッピング・参入余地・SOM試算）
-→ offer_strategist（Grand Slam Offer設計）→ BUN_CEO確認
-```
-- 商材ありき禁止・市場→ニーズ→商材の順序厳守
-- 三位一体必達: 売上アップ主軸×管理工数削減×コストダウン
-- 評価軸: 手離れ×継続性×自動販売×短期販売可能×利益性×原価0or低
-
-## 2026-06-05 第2回セッション 確定事項
-
-### ⚠️ COOの役割定義（2026-05-30確定・再徹底）
-**COOは実動禁止。判断・dispatch・承認・報告のみ。**
-- 市場調査・分析・レポート執筆は全てサブエージェントにdispatch
-- COOが自分で書いた成果物はルール違反
-
-### 会社の2本柱（PILLAR）
-```
-PILLAR①: キャッシュ生成エンジン（直近）
-  評価軸: 手離れ × 継続性 × 自動販売 × 短期販売可能 × 多大な利益 × 原価0/低
-  SCALE軸: S(手離れ/自動販売) C(質的担保) A(継続性/多大な利益) L(短期販売可能)
-
-PILLAR②: NS-OS（半年〜1年でフルバージョン上市）
-  評価軸: NS-OS開発加速・共通インフラ貢献・検証価値
-  E軸のみ: NS-OS進化貢献度
-```
-- **①でキャッシュを稼ぎながら②を中長期開発する**
-- 2つは独立した事業軸（①が②の部品になるわけではない）
-
-### AUDIT RED対応（2026-06-05 週次AUDIT）
-以下3本のDEVチケットを起票済み（再発防止仕組み）：
-
-**仕組み①: coo_done.sh（done移動専用スクリプト）**
-- `repo/scripts/coo/coo_done.sh`
-- COOがdone/に移動する唯一の手段として強制化
-- 自動チェック: qa_result=QA_PASSの記録があるか / coo_approved_at未記入確認
-- 全PASS後のみ: status=done更新 + coo_approved_at追記 + done/移動
-- 手動mvはboardバリデーション（仕組み②）で即検出
-
-**仕組み②: done/バリデーション自動化（board_runner_monitor追加）**
-- 5分ごとにdone/を自動スキャン
-- status≠done のチケットを検出 → qa/に自動差し戻し + アラートログ
-- `validate_done_lane()` 関数をboard_runner_monitor.shに追加
-
-**仕組み③: QA機械チェック（qa_mechanical_check.sh）**
-- QA Director実行前に成果物を自動スキャン
-- CHECK A: 出典URL（https://）が3件未満 → FAIL（research/strategy/marketプロファイルのみ）
-- CHECK B: 禁止ワード（「一般的に」「と思われます」「〜と考えられます」「とされています」）→ FAIL
-- CHECK C: 「など」が4件超 → FAIL
-- CHECK D: 数値あり・URL0件 → FAIL
-- **いずれか1つでもFAIL → QA_FAIL確定・人間判断不可**
-- qa_profile=implementationの場合はCHECK A・DをSKIP
-
-### RSC情報源多様化（BUN_CEO承認済み）
-チケット: `20260605_1205_RSC_multi_source_intelligence_build_001`（todo/）
-- 🔴 CH-1: YouTube（RSS+WebFetch）
-- 🔴 CH-2: 海外ニュースレター（ProductHunt/a16z/CBInsights）
-- 🔴 CH-3: Product Hunt（新着プロダクト）
-- 🟡 CH-4: X/Twitter トレンド
-- 🟡 CH-5: VC/投資家レポート（公開資料）
-- 🟡 CH-6: LinkedIn（採用情報→事業方向性）
-- 🟢 CH-7: 特許データベース（J-PlatPat）
-- 🟢 CH-8: 海外カンファレンス資料
-理由: ネット検索偏重では他社と同じ情報しか取れない。先行シグナルを取るため。
-
-### WebFetch権限
-グローバルsettings.json（~/.claude/settings.json）のallowに既存。変更不要。
-
-## 確立済みシステム（セッション5-8）
-
-- **board_runner_monitor.sh v2**: launchd常駐・案B QA正規フロー実装済み
-  - `/bin/bash` にフルディスクアクセス付与済み
+- **board_runner_monitor.sh**: launchd常駐・全レーン監視・`--permission-mode acceptEdits` 適用済み
   - スクリプト正本: `repo/scripts/monitors/board_runner_monitor.sh`
   - 実行コピー: `~/Library/Scripts/board_runner_monitor.sh`
-- **market_intelligence_v1 PKG**: `/01_Areas/MKT/persona_packages/market_intelligence_v1/`（10ファイル）
-- **Runner 自動切り替え**: `Vault/logs/runner_owner.json` で制御
-- **crontab**: AUDITのみ
-- **AUDIT Director v1**: crontab独立稼働
+  - **現在停止中（CODEX引き継ぎのため）**
 
-## 確立済みルール（セッション3-8確定）
-
-- COO done承認は現物確認必須（QA PASSのゴム印禁止・独立ビジネス判断必須）
-- **done移動は coo_done.sh 経由のみ**（仕組み①稼働後・手動mv禁止）
-- QAフロー: 案B正規（QAチケット自動生成方式）
-- 商材開発: 市場→ニーズ→商材の正規順序（商材ありき禁止）
-- 「0ベース」= 実績ゼロ・顧客ゼロ・商品ゼロ・看板ゼロの新規立ち上げ会社
-- RSC→BizDev→market_intelligence→offer_strategist→BUN_CEO確認の順序厳守
-- launchd停止: `launchctl unload ~/Library/LaunchAgents/com.northstar.board-runner-monitor.plist`
-- launchd再開: `launchctl load ~/Library/LaunchAgents/com.northstar.board-runner-monitor.plist`
+## インフラ・技術メモ
+- VPS SSH: ssh root@162.43.78.67 | n8n: http://162.43.78.67:5678 | WF総数: 25本
+- バックアップ: GitHub日次（3:00 JST）+ VPS SQLite日次（3:30 JST cron）
+- launchd: board_runner停止中（2026-06-06 12:17 launchctl unload済み）
+- drive.js認証エラー時: 別セッションでdrive.jsを一度実行→oauth_tokens.json自動更新
